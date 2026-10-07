@@ -6,7 +6,9 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { createApp } from "./app";
 import { loadConfig } from "./config";
 import { createAppContext } from "./context";
+import { claudeRunsRepo } from "./db/repositories";
 import { errorMessage } from "./lib/errors";
+import { nowIso } from "./lib/time";
 import { startRefreshPoller } from "./refresh/poller";
 
 const WEB_DIST = join(import.meta.dirname, "..", "dist", "web");
@@ -21,6 +23,8 @@ const openBrowser = (url: string): void => {
 const main = (): void => {
   const config = loadConfig();
   const { ctx, close } = createAppContext(config);
+  const interrupted = claudeRunsRepo.failRunningRuns(ctx.db, "Interrupted: four-eyes stopped while this run was in progress", nowIso());
+  if (interrupted > 0) console.log(`[four-eyes] marked ${interrupted} Claude run(s) left running by an earlier server as interrupted`);
   const app = createApp(ctx);
 
   if (config.production) {

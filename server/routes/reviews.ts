@@ -1,6 +1,8 @@
 import type { Hono } from "hono";
 import { routes } from "@shared/api";
 import type { AppContext } from "../context";
+import { rerunReview } from "../claude/rerun-review";
+import { submitGitHubReview } from "../core/github-review";
 import { buildReviewDetail, buildSummary, listReviewItems, toListItem } from "../core/views";
 import { reviewsRepo } from "../db/repositories";
 import { deleteReview, moveReviewToPast } from "../ingest/lifecycle";
@@ -28,6 +30,13 @@ export const registerReviewRoutes = (app: Hono, ctx: AppContext): void => {
     const review = await moveReviewToPast(ctx, params.reviewId);
     return { review: toListItem(ctx.db, review) };
   });
+
+  registerJson(app, routes.rerunReview, ({ params }) => {
+    rerunReview(ctx, params.reviewId);
+    return { ok: true } as const;
+  });
+
+  registerJson(app, routes.submitGitHubReview, ({ params, body }) => submitGitHubReview(ctx, params.reviewId, body));
 
   registerJson(app, routes.getSummary, ({ params }) => buildSummary(ctx.db, params.reviewId));
 };

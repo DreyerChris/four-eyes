@@ -14,6 +14,8 @@ export const CLAUDE_RUN_KINDS = ["chunking", "review", "qa"] as const;
 export const CLAUDE_RUN_STATUSES = ["running", "succeeded", "failed"] as const;
 export const DIFF_LAYOUTS = ["unified", "split"] as const;
 export const THEMES = ["dark", "light"] as const;
+export const VERBOSITIES = ["brief", "standard", "detailed"] as const;
+export const GITHUB_REVIEW_EVENTS = ["approve", "comment", "request_changes"] as const;
 export const DIFF_SIDES = ["old", "new"] as const;
 
 export const ReviewStatusSchema = z.enum(REVIEW_STATUSES);
@@ -30,6 +32,8 @@ export const ClaudeRunKindSchema = z.enum(CLAUDE_RUN_KINDS);
 export const ClaudeRunStatusSchema = z.enum(CLAUDE_RUN_STATUSES);
 export const DiffLayoutSchema = z.enum(DIFF_LAYOUTS);
 export const ThemeSchema = z.enum(THEMES);
+export const VerbositySchema = z.enum(VERBOSITIES);
+export const GitHubReviewEventSchema = z.enum(GITHUB_REVIEW_EVENTS);
 export const DiffSideSchema = z.enum(DIFF_SIDES);
 
 export type ReviewStatus = z.infer<typeof ReviewStatusSchema>;
@@ -46,6 +50,8 @@ export type ClaudeRunKind = z.infer<typeof ClaudeRunKindSchema>;
 export type ClaudeRunStatus = z.infer<typeof ClaudeRunStatusSchema>;
 export type DiffLayout = z.infer<typeof DiffLayoutSchema>;
 export type Theme = z.infer<typeof ThemeSchema>;
+export type Verbosity = z.infer<typeof VerbositySchema>;
+export type GitHubReviewEvent = z.infer<typeof GitHubReviewEventSchema>;
 export type DiffSide = z.infer<typeof DiffSideSchema>;
 
 export const IsoDateSchema = z.string();
@@ -228,6 +234,7 @@ export const SettingsSchema = z.object({
   models: ModelSettingsSchema,
   inlineFindings: z.boolean(),
   theme: ThemeSchema,
+  verbosity: VerbositySchema,
   diffLayout: DiffLayoutSchema,
   hideWhitespace: z.boolean(),
   claudePath: z.string().trim().min(1).nullable(),
@@ -258,6 +265,7 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   inlineFindings: false,
   theme: "dark",
+  verbosity: "standard",
   diffLayout: "unified",
   hideWhitespace: false,
   claudePath: null,

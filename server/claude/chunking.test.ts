@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { chunksRepo, claudeRunsRepo, reviewsRepo, settingsRepo } from "../db/repositories";
 import { createTestContext, type TestContextHandle } from "../test/context";
 import { buildChunkingPrompt, runChunking, validateChunkPlan } from "./chunking";
+import { OUTPUT_LENGTH_RULES } from "./verbosity";
 import { ClaudeRunError } from "./errors";
 import { createScriptedRunner, SCRIPTED_USAGE, seedReviewWithHunks } from "./test-support";
 
@@ -60,10 +61,19 @@ describe("buildChunkingPrompt", () => {
   it("lists every hunk ID with its file and patch", () => {
     const handle = createTestContext();
     const { hunks } = seedReviewWithHunks(handle.ctx, ["src/a.ts", "src/b.ts"]);
-    const prompt = buildChunkingPrompt(hunks);
+    const prompt = buildChunkingPrompt(hunks, "standard");
     hunks.forEach((hunk) => expect(prompt).toContain(`### ${hunk.id}`));
     expect(prompt).toContain("file: src/a.ts | modified | +2 -1");
     expect(prompt).toContain("+new line");
+    handle.close();
+  });
+
+  it("asks for explanations of the length set by the verbosity setting", () => {
+    const handle = createTestContext();
+    const { hunks } = seedReviewWithHunks(handle.ctx, ["src/a.ts"]);
+    const prompt = buildChunkingPrompt(hunks, "brief");
+    expect(prompt).toContain(OUTPUT_LENGTH_RULES.brief.chunkExplanation);
+    expect(prompt).not.toContain(OUTPUT_LENGTH_RULES.standard.chunkExplanation);
     handle.close();
   });
 });

@@ -52,7 +52,13 @@ export const createTempRepo = async (): Promise<TempRepo> => {
 export const createLocalGitHubClient = (repoPath: string, meta: (ref: PrRef) => Promise<PrMeta> | PrMeta): GitHubClient => ({
   fetchPr: async (ref) => meta(ref),
   remoteUrl: () => repoPath,
+  submitReview: refuseReviewSubmission,
 });
+
+/** submitReview for test GitHub clients that never expect a review to be posted. */
+export const refuseReviewSubmission = async (): Promise<never> => {
+  throw new Error("This test GitHub client does not accept reviews");
+};
 
 /** Numbered lines `line 1`..`line n`, each ending in a newline. */
 export const numberedLines = (count: number, map: (line: number) => string = (line) => `line ${line}`): string =>

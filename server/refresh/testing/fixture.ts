@@ -3,6 +3,7 @@ import { fakeChunkPlan } from "../../claude/fake-runner";
 import type { AppContext } from "../../context";
 import { chunksRepo, findingsRepo, hunksRepo, reviewsRepo, roundsRepo } from "../../db/repositories";
 import type { GitHubClient } from "../../ingest/github-client";
+import { refuseReviewSubmission } from "../../ingest/testing";
 import { newId } from "../../lib/ids";
 import { nowIso } from "../../lib/time";
 import type { RefreshDeps } from "../deps";
@@ -24,6 +25,7 @@ export const createFakeGitHub = (initial: PrMeta): FakeGitHub => {
       return state.meta;
     },
     remoteUrl: () => "file:///dev/null",
+    submitReview: refuseReviewSubmission,
     setPr: (patch) => {
       state.meta = { ...state.meta, ...patch };
     },

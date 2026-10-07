@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
   getReview: vi.fn(),
   setFindingVerdict: vi.fn(),
   finishReview: vi.fn(),
+  submitGitHubReview: vi.fn(),
+  rerunReview: vi.fn(),
   copyText: vi.fn(),
 }));
 
@@ -23,6 +25,8 @@ vi.mock("../../api/client", () => ({
     getReview: mocks.getReview,
     setFindingVerdict: mocks.setFindingVerdict,
     finishReview: mocks.finishReview,
+    submitGitHubReview: mocks.submitGitHubReview,
+    rerunReview: mocks.rerunReview,
     getRefreshStatus: vi.fn(),
     listQuestions: vi.fn(),
     listReviews: vi.fn(),
@@ -100,7 +104,7 @@ describe("SummaryPage", () => {
 
   it("shows the verdict, grouped findings, notes, questions and coverage", async () => {
     setup();
-    expect(await screen.findByText("Request changes")).toBeTruthy();
+    expect(within(await screen.findByRole("region", { name: "verdict" })).getByText("Request changes")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Bug (1)" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Nit (1)" })).toBeTruthy();
     expect(screen.getByText(/Check null emails/)).toBeTruthy();
@@ -139,7 +143,7 @@ describe("SummaryPage", () => {
   it("supports the summary keys: j/k select, a/x vote, c copies, shift+C copies everything", async () => {
     const summary = fixtureSummary();
     setup(summary);
-    await screen.findByText("Request changes");
+    await screen.findByRole("region", { name: "verdict" });
     fireEvent.keyDown(document.body, { key: "j" });
     fireEvent.keyDown(document.body, { key: "x" });
     await waitFor(() => expect(mocks.setFindingVerdict).toHaveBeenCalledWith("rev_1", "fnd_2", { verdict: "disagree" }));
@@ -191,5 +195,105 @@ describe("SummaryPage", () => {
       }),
     );
     expect((await screen.findByRole("alert")).textContent).toBe("Claude's review failed: gateway timeout");
+  });
+});
+
+describe("SubmitReviewPanel", () => {
+  const panel = async (): Promise<HTMLElement> => screen.findByRole("region", { name: "submit to GitHub" });
+
+  it("approves without a comment and links to the submitted review", async () => {
+    mocks.submitGitHubReview.mockResolvedValue({ url: "https://github.com/acme/widgets/pull/7#pullrequestreview-1" });
+    setup();
+    const region = await panel();
+    expect((within(region).getByRole("button", { name: "Submit to GitHub" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(within(region).getByRole("radio", { name: "Approve" }));
+    fireEvent.click(within(region).getByRole("button", { name: "Approve on GitHub" }));
+    await waitFor(() => expect(mocks.submitGitHubReview).toHaveBeenCalledWith("rev_1", { event: "approve", body: "" }));
+    const link = await within(region).findByRole("link", { name: "View it on GitHub" });
+    expect(link.getAttribute("href")).toBe("https://github.com/acme/widgets/pull/7#pullrequestreview-1");
+    expect((within(region).getByRole("radio", { name: "Approve" }) as HTMLInputElement).checked).toBe(false);
+  });
+
+  it("requires a comment to request changes", async () => {
+    mocks.submitGitHubReview.mockResolvedValue({ url: "https://github.com/acme/widgets/pull/7" });
+    setup();
+    const region = await panel();
+    fireEvent.click(within(region).getByRole("radio", { name: "Request changes" }));
+    const button = within(region).getByRole("button", { name: "Request changes on GitHub" }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect(within(region).getByRole("alert").textContent).toContain("GitHub requires one unless you approve");
+    fireEvent.change(within(region).getByLabelText("Your comment"), { target: { value: "Please handle null emails." } });
+    expect(button.disabled).toBe(false);
+    fireEvent.click(button);
+    await waitFor(() =>
+      expect(mocks.submitGitHubReview).toHaveBeenCalledWith("rev_1", { event: "request_changes", body: "Please handle null emails." }),
+    );
+  });
+
+  it("adds the full review below what you already wrote", async () => {
+    const summary = fixtureSummary();
+    setup(summary);
+    const region = await panel();
+    const comment = within(region).getByLabelText("Your comment") as HTMLTextAreaElement;
+    fireEvent.change(comment, { target: { value: "Thanks!" } });
+    fireEvent.click(within(region).getByRole("button", { name: "Add full review to comment" }));
+    expect(comment.value).toBe(`Thanks!\n\n${buildFullReviewMarkdown(summary)}`);
+  });
+
+  it("shows GitHub's refusal", async () => {
+    mocks.submitGitHubReview.mockRejectedValue(new Error("GitHub refused the review: Can not approve your own pull request"));
+    setup();
+    const region = await panel();
+    fireEvent.click(within(region).getByRole("radio", { name: "Approve" }));
+    fireEvent.click(within(region).getByRole("button", { name: "Approve on GitHub" }));
+    expect((await within(region).findByRole("alert")).textContent).toContain("Can not approve your own pull request");
+  });
+
+  it("explains why Past reviews and closed PRs cannot be submitted", async () => {
+    setup(fixtureSummary({ review: fixtureReviewItem({ status: "past" }) }));
+    expect((await panel()).textContent).toContain("This review is in Past");
+    expect(within(await panel()).queryByRole("radio")).toBeNull();
+    cleanup();
+    setup(fixtureSummary({ review: fixtureReviewItem({ ghState: "merged" }) }));
+    expect((await panel()).textContent).toContain("is merged, so it cannot take a new review");
+  });
+});
+
+describe("review re-run", () => {
+  const reviewRun = (status: ClaudeRun["status"], startedAt: string): ClaudeRun => ({
+    id: "run_1",
+    reviewId: "rev_1",
+    kind: "review",
+    model: "claude-opus-5-5",
+    status,
+    sessionId: null,
+    inputTokens: null,
+    outputTokens: null,
+    costUsd: null,
+    error: status === "failed" ? "gateway timeout" : null,
+    startedAt,
+    finishedAt: null,
+  });
+
+  const verdictPanel = async (): Promise<HTMLElement> => screen.findByRole("region", { name: "verdict" });
+
+  it("retries a failed review", async () => {
+    mocks.rerunReview.mockResolvedValue({ ok: true });
+    setup(fixtureSummary({ verdict: null, reviewRun: reviewRun("failed", "2026-01-01T00:00:00.000Z") }));
+    fireEvent.click(within(await verdictPanel()).getByRole("button", { name: "Retry review" }));
+    await waitFor(() => expect(mocks.rerunReview).toHaveBeenCalledWith("rev_1"));
+  });
+
+  it("offers a restart while a review is running and says when it started", async () => {
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60_000).toISOString();
+    setup(fixtureSummary({ verdict: null, reviewRun: reviewRun("running", tenMinutesAgo) }));
+    const panel = await verdictPanel();
+    expect(within(panel).getByRole("status").textContent).toContain("started 10m ago");
+    expect(within(panel).getByRole("button", { name: "Restart review" })).toBeTruthy();
+  });
+
+  it("has no re-run button on a Past review", async () => {
+    setup(fixtureSummary({ review: fixtureReviewItem({ status: "past" }), reviewRun: reviewRun("failed", "2026-01-01T00:00:00.000Z") }));
+    expect(within(await verdictPanel()).queryByRole("button")).toBeNull();
   });
 });

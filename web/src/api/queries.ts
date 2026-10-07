@@ -15,6 +15,8 @@ import type {
   QaStreamEvent,
   ReviewDetailResponse,
   SetFindingVerdictRequest,
+  SubmitGitHubReviewRequest,
+  SubmitGitHubReviewResponse,
   SummaryResponse,
   UpdateChunkProgressRequest,
   UpdateSettingsRequest,
@@ -128,6 +130,17 @@ export const useFinishReview = (): UseMutationResult<FinishReviewResponse, Error
     onSuccess: (_data, reviewId) => invalidateReview(client, reviewId),
   });
 };
+
+export const useRerunReview = (reviewId: string): UseMutationResult<OkResponse, Error, void> => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.rerunReview(reviewId),
+    onSuccess: () => invalidateReview(client, reviewId),
+  });
+};
+
+export const useSubmitGitHubReview = (reviewId: string): UseMutationResult<SubmitGitHubReviewResponse, Error, SubmitGitHubReviewRequest> =>
+  useMutation({ mutationFn: (request: SubmitGitHubReviewRequest) => api.submitGitHubReview(reviewId, request) });
 
 export interface ChunkProgressVariables extends UpdateChunkProgressRequest {
   readonly chunkId: string;

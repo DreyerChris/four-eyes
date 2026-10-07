@@ -13,7 +13,10 @@ import { RefreshButton } from "../shell/refresh/RefreshButton";
 import { CostPanel } from "./CostPanel";
 import { FindingCard } from "./FindingCard";
 import { SEVERITY_LABELS, STATUS_LABELS, STATUS_MARKS, SUGGESTION_LABELS, USER_VERDICT_LABELS } from "./labels";
+import { formatRelative } from "../shell/list/format";
 import { orderFindings } from "./ordering";
+import { RerunReviewButton } from "./RerunReviewButton";
+import { SubmitReviewPanel } from "./SubmitReviewPanel";
 import { buildFullReviewMarkdown, findingToGitHubComment, notedChunks, noteToGitHubComment } from "./markdown";
 import styles from "./review.module.css";
 
@@ -171,7 +174,7 @@ const SummaryBody = ({ summary, hunksByChunk, runs }: SummaryBodyProps): ReactEl
         ) : null}
       </Panel>
 
-      <Panel title="verdict">
+      <Panel title="verdict" actions={readOnly ? undefined : <RerunReviewButton reviewId={reviewId} status={reviewRun?.status ?? null} />}>
         {verdict ? (
           <>
             <p className={`${styles.suggestion} ${styles[`suggestion_${verdict.suggestion}`] ?? ""}`}>{SUGGESTION_LABELS[verdict.suggestion]}</p>
@@ -182,7 +185,7 @@ const SummaryBody = ({ summary, hunksByChunk, runs }: SummaryBodyProps): ReactEl
             Claude&apos;s review failed: {reviewRun.error ?? "unknown error"}
           </p>
         ) : reviewRun?.status === "running" ? (
-          <p role="status">Claude is still reviewing this PR…</p>
+          <p role="status">Claude is still reviewing this PR (started {formatRelative(reviewRun.startedAt, Date.now())})…</p>
         ) : (
           <p className={styles.muted}>No verdict from Claude yet.</p>
         )}
@@ -345,12 +348,14 @@ const SummaryBody = ({ summary, hunksByChunk, runs }: SummaryBodyProps): ReactEl
         ) : null}
       </Panel>
 
+      <SubmitReviewPanel summary={summary} />
+
       <CostPanel runs={runs} />
     </div>
   );
 };
 
-/** Verdict, findings by severity, your flags and notes, questions, coverage, Copy full review. */
+/** Verdict, findings by severity, your flags and notes, questions, coverage, submit to GitHub, Copy full review. */
 export const SummaryPage = ({ reviewId }: SummaryPageProps): ReactElement => {
   const summary = useSummary(reviewId);
   const detail = useReview(reviewId);

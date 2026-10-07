@@ -6,6 +6,7 @@ import {
   ClaudeRunSchema,
   ClaudeRunStatusSchema,
   FindingSchema,
+  GitHubReviewEventSchema,
   HunkSchema,
   ModelSettingsSchema,
   ProgressEventSchema,
@@ -82,6 +83,22 @@ export const FinishReviewResponseSchema = z.object({
   review: ReviewListItemSchema,
 });
 export type FinishReviewResponse = z.infer<typeof FinishReviewResponseSchema>;
+
+export const SubmitGitHubReviewRequestSchema = z
+  .object({
+    event: GitHubReviewEventSchema,
+    body: z.string(),
+  })
+  .refine((request) => request.event === "approve" || request.body.trim() !== "", {
+    message: "GitHub needs a comment unless you approve",
+    path: ["body"],
+  });
+export type SubmitGitHubReviewRequest = z.infer<typeof SubmitGitHubReviewRequestSchema>;
+
+export const SubmitGitHubReviewResponseSchema = z.object({
+  url: z.string(),
+});
+export type SubmitGitHubReviewResponse = z.infer<typeof SubmitGitHubReviewResponseSchema>;
 
 export const UpdateChunkProgressRequestSchema = z.object({
   status: ChunkStatusSchema,
@@ -322,6 +339,20 @@ export const routes = {
     query: null,
     body: null,
     response: FinishReviewResponseSchema,
+  }),
+  rerunReview: json({
+    method: "POST",
+    path: "/api/reviews/:reviewId/review-run",
+    query: null,
+    body: null,
+    response: OkResponseSchema,
+  }),
+  submitGitHubReview: json({
+    method: "POST",
+    path: "/api/reviews/:reviewId/github-review",
+    query: null,
+    body: SubmitGitHubReviewRequestSchema,
+    response: SubmitGitHubReviewResponseSchema,
   }),
   updateChunkProgress: json({
     method: "PUT",

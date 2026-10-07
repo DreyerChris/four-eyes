@@ -31,7 +31,7 @@ test("step through a review with the keyboard only, then copy the summary", asyn
   await page.keyboard.press("j");
   await expect(page).toHaveURL(new RegExp(`/reviews/${reviewId}/summary$`));
 
-  await expect(page.getByText("Request changes", { exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "verdict" }).getByText("Request changes", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Bug (1)" })).toBeVisible();
   await expect(page.getByText("Mail goes out before save.")).toBeVisible();
   await expect(page.getByText("Chunks reviewed: 2 of 5")).toBeVisible();

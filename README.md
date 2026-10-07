@@ -45,12 +45,19 @@ pnpm start
 
 Everything also works with the mouse.
 
+### Submitting your review
+
+The summary page has a **submit to GitHub** panel. Pick Approve, Comment or Request changes, optionally write a comment, and submit. The comment is optional when you approve, and GitHub requires one for the other two. **Add full review to comment** appends the same markdown that **Copy full review** copies.
+
+The review is posted with your `gh` login and attached to the commit you reviewed, even if the PR has newer commits since. This is the only thing four-eyes writes to GitHub.
+
 ## Settings
 
 Open settings with `,`.
 
 - **Models** used for chunking, the background review and Q&A. Defaults are Sonnet for chunking and Q&A and Opus for the review.
 - **Claude executable.** Leave empty to use `claude` from your PATH. Set it if your Claude Code lives somewhere else or you start it through a wrapper. Accepts an absolute path, `~/...`, or a command name on your PATH. The panel shows which binary will be used and its version.
+- **Claude's output length.** How much Claude writes in chunk explanations, findings, the verdict and Q&A answers: `brief`, `standard` (the default) or `detailed`. It applies to reviews and questions run after you change it, including follow-up questions in an existing Q&A session.
 - **Inline findings.** Show Claude's findings on each chunk while you step through, instead of only on the summary.
 
 The Claude binary is chosen in this order: the settings value, then `FOUR_EYES_CLAUDE_PATH`, then `claude` on PATH.

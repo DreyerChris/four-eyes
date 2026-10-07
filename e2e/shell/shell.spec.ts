@@ -174,6 +174,24 @@ test.describe("settings", () => {
     await expect(page.getByRole("dialog", { name: "settings" })).toBeHidden();
   });
 
+  test("persists Claude's output length across reloads", async ({ page }) => {
+    await page.goto("/");
+    await page.keyboard.press(",");
+    const dialog = page.getByRole("dialog", { name: "settings" });
+    await expect(dialog.getByLabel("Claude's output length")).toHaveValue("standard");
+    await dialog.getByLabel("Claude's output length").selectOption("brief");
+    await dialog.getByRole("button", { name: "save" }).click();
+    await expect(dialog).toBeHidden();
+
+    await page.reload();
+    await page.keyboard.press(",");
+    await expect(page.getByLabel("Claude's output length")).toHaveValue("brief");
+
+    await page.getByLabel("Claude's output length").selectOption("standard");
+    await page.getByRole("button", { name: "save" }).click();
+    await expect(page.getByRole("dialog", { name: "settings" })).toBeHidden();
+  });
+
   test("refuses to save an empty model ID", async ({ page }) => {
     await page.goto("/");
     await page.keyboard.press(",");

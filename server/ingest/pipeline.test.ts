@@ -7,7 +7,7 @@ import { createTestContext, type TestContextHandle } from "../test/context";
 import { FAKE_PR_URL } from "./github-client";
 import { deleteReview, moveReviewToPast } from "./lifecycle";
 import { startIngest, waitForIngest } from "./pipeline";
-import { createLocalGitHubClient, createTempRepo, type TempRepo } from "./testing";
+import { createLocalGitHubClient, createTempRepo, refuseReviewSubmission, type TempRepo } from "./testing";
 
 const claude = vi.hoisted(() => ({
   runChunking: vi.fn(),
@@ -106,6 +106,7 @@ describe("ingest pipeline", () => {
           throw new Error("gh exploded");
         },
         remoteUrl: () => "/nowhere",
+        submitReview: refuseReviewSubmission,
       },
     });
     try {

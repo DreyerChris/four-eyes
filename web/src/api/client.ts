@@ -23,6 +23,8 @@ import {
   type ReviewDetailResponse,
   type SeedFixtureResponse,
   type SetFindingVerdictRequest,
+  type SubmitGitHubReviewRequest,
+  type SubmitGitHubReviewResponse,
   type SummaryResponse,
   type UpdateChunkProgressRequest,
   type UpdateSettingsRequest,
@@ -93,6 +95,9 @@ export const api = {
   getReview: (reviewId: string): Promise<ReviewDetailResponse> => callJson(routes.getReview, { params: { reviewId } }),
   deleteReview: (reviewId: string): Promise<OkResponse> => callJson(routes.deleteReview, { params: { reviewId } }),
   finishReview: (reviewId: string): Promise<FinishReviewResponse> => callJson(routes.finishReview, { params: { reviewId } }),
+  rerunReview: (reviewId: string): Promise<OkResponse> => callJson(routes.rerunReview, { params: { reviewId } }),
+  submitGitHubReview: (reviewId: string, body: SubmitGitHubReviewRequest): Promise<SubmitGitHubReviewResponse> =>
+    callJson(routes.submitGitHubReview, { params: { reviewId }, body }),
   updateChunkProgress: (reviewId: string, chunkId: string, body: UpdateChunkProgressRequest): Promise<ChunkProgress> =>
     callJson(routes.updateChunkProgress, { params: { reviewId, chunkId }, body }),
   getSummary: (reviewId: string): Promise<SummaryResponse> => callJson(routes.getSummary, { params: { reviewId } }),

@@ -2,7 +2,7 @@
 
 A local PR review tool that sits on top of Claude. You paste a PR link. The tool breaks the PR into small, ordered chunks that you step through one at a time. Claude runs a review in the background, and you see its findings at the end.
 
-Single user, runs locally, read-only toward GitHub.
+Single user, runs locally. The only write to GitHub is submitting your review from the summary page.
 
 ---
 
@@ -14,7 +14,7 @@ Single user, runs locally, read-only toward GitHub.
 | 2 | App type | Local web app. One command starts a Node server and opens `localhost`. |
 | 3 | Chunking | The server splits the diff into hunks with IDs. Claude only groups and orders hunk IDs; it never rewrites code. The server checks that every hunk is used exactly once, and leftovers go into an "Other changes" chunk. Target 5–40 changed lines per chunk. Order: types/models → logic → wiring → tests → "skim this" (lockfiles, generated code, snapshots). |
 | 4 | Findings timing | The review runs in the background right after chunking. Findings stay hidden until the summary by default; a setting shows them inline. Each chunk can be marked looks good / flagged / question, with notes. |
-| 5 | GitHub writes | None in v1. A "copy as GitHub comment" button on every note and finding. Posting as a pending review is a possible v2. |
+| 5 | GitHub writes | The summary page submits a review (approve, comment or request changes) through `gh api`, as the user's gh login, on the head commit that was reviewed. The comment is optional for approve and required otherwise, as GitHub requires. Past reviews and closed or merged PRs cannot be submitted. Notes and findings still have a "copy as GitHub comment" button; posting them as inline comments is a possible later addition. |
 | 6 | Q&A | One ongoing Claude session per PR. The SDK session ID is stored and resumed. Each question is tied to its file, line range, chunk, and head SHA. Answers stream in. |
 | 7 | Click to definition | Shiki tokens are clickable. ripgrep searches for definition patterns: one match opens it, several show a list, none offers "Ask Claude". File names open a file viewer with changed lines highlighted and a before/after toggle. LSP for TypeScript is a possible later addition. |
 | 8 | Local code | The tool manages its own copies: a bare clone per repo in `~/.four-eyes/repos/` and a `git worktree` per PR at the head SHA. Your own clones are never touched. Uses existing `gh` logins (github.com and any GitHub Enterprise host). |
@@ -112,7 +112,7 @@ Each milestone ends with something usable.
 
 ## Open items for later
 
-- Posting a pending review to GitHub (v2).
+- Posting notes and findings as inline review comments on GitHub.
 - LSP-based go-to-definition for TypeScript.
 - Pre-chunking file exclusion step for very large PRs.
 - macOS notifications for new commits.

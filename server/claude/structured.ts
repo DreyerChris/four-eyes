@@ -16,6 +16,7 @@ export interface StructuredAttemptPlan<T> {
   readonly jsonSchema: JsonSchema;
   readonly hunkIds: readonly string[];
   readonly maxTurns: number;
+  readonly signal?: AbortSignal;
   readonly validate: (raw: unknown) => Result<T>;
   readonly retryPrompt: (error: string, resumed: boolean) => string;
 }
@@ -44,6 +45,7 @@ const attempt = async <T>(
       hunkIds: plan.hunkIds,
       maxTurns: plan.maxTurns,
       onProgress: plan.log.progress,
+      ...(plan.signal === undefined ? {} : { signal: plan.signal }),
       ...(resumeSessionId === null ? {} : { resumeSessionId }),
     });
     const validated = plan.validate(result.output);
@@ -73,7 +75,7 @@ const attempt = async <T>(
  */
 export const runStructuredWithRetry = async <T>(plan: StructuredAttemptPlan<T>): Promise<StructuredOutcome<T>> => {
   const first = await attempt(plan, plan.prompt, null);
-  if (first.outcome.ok) return first.outcome;
+  if (first.outcome.ok || plan.signal?.aborted === true) return first.outcome;
 
   plan.log.retrying(first.outcome.error);
   const resumeFrom = first.producedOutput ? first.outcome.sessionId : null;

@@ -1,10 +1,19 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadConfig } from "../config";
 import { HttpError } from "../lib/errors";
-import { FAKE_PR_STATE_FILE, FAKE_PR_URL, createFakeGitHubClient, createGhCliClient, parseGhPrJson } from "./github-client";
+import {
+  FAKE_PR_STATE_FILE,
+  FAKE_PR_URL,
+  FAKE_REVIEWS_FILE,
+  createFakeGitHubClient,
+  createGhCliClient,
+  ghReviewArgs,
+  githubApiErrorDetail,
+  parseGhPrJson,
+} from "./github-client";
 import { parsePrUrl } from "./pr-url";
 
 describe("parseGhPrJson", () => {
@@ -90,5 +99,66 @@ describe("createFakeGitHubClient", () => {
     const other = parsePrUrl("https://github.com/someone/else/pull/2");
     await expect(client.fetchPr(other)).rejects.toThrow(HttpError);
     await expect(client.fetchPr(other)).rejects.toThrow(/only knows/);
+    await expect(client.submitReview(other, { event: "approve", body: null, commitId: "abc" })).rejects.toThrow(/only knows/);
+  });
+
+  it("logs submitted reviews to the fake repo and links each one", async () => {
+    const ref = parsePrUrl(FAKE_PR_URL);
+    const client = createFakeGitHubClient(loadConfig({ FOUR_EYES_HOME: newHome() }));
+    const first = await client.submitReview(ref, { event: "approve", body: null, commitId: "abc" });
+    const second = await client.submitReview(ref, { event: "comment", body: "Looks good", commitId: "def" });
+    expect(first.url).toBe(`${FAKE_PR_URL}#pullrequestreview-1`);
+    expect(second.url).toBe(`${FAKE_PR_URL}#pullrequestreview-2`);
+    const log = readFileSync(join(client.remoteUrl(ref), ".git", FAKE_REVIEWS_FILE), "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as unknown);
+    expect(log).toEqual([
+      { event: "approve", body: null, commitId: "abc" },
+      { event: "comment", body: "Looks good", commitId: "def" },
+    ]);
+  });
+});
+
+describe("ghReviewArgs", () => {
+  const ref = { host: "ghe.example.com", owner: "team", repo: "svc", number: 7 };
+
+  it("posts a submitted review on the given commit and leaves out an empty body", () => {
+    expect(ghReviewArgs(ref, { event: "approve", body: null, commitId: "abc123" })).toEqual([
+      "api",
+      "--hostname",
+      "ghe.example.com",
+      "--method",
+      "POST",
+      "repos/team/svc/pulls/7/reviews",
+      "-f",
+      "event=APPROVE",
+      "-f",
+      "commit_id=abc123",
+    ]);
+  });
+
+  it("passes the comment as a raw field, so @ and = are sent as written", () => {
+    const args = ghReviewArgs(ref, { event: "request_changes", body: "@octocat a=b", commitId: "abc123" });
+    expect(args).toContain("event=REQUEST_CHANGES");
+    expect(args.slice(-2)).toEqual(["-f", "body=@octocat a=b"]);
+  });
+});
+
+describe("githubApiErrorDetail", () => {
+  it("prefers GitHub's specific errors over its generic message", () => {
+    const body = JSON.stringify({ message: "Unprocessable Entity", errors: ["Can not approve your own pull request"] });
+    expect(githubApiErrorDetail(body)).toBe("Can not approve your own pull request");
+  });
+
+  it("reads errors given as objects and falls back to the message", () => {
+    expect(githubApiErrorDetail(JSON.stringify({ errors: [{ message: "a" }, { message: "b" }] }))).toBe("a; b");
+    expect(githubApiErrorDetail(JSON.stringify({ message: "Bad credentials" }))).toBe("Bad credentials");
+  });
+
+  it("returns null when there is no JSON reason", () => {
+    expect(githubApiErrorDetail("")).toBeNull();
+    expect(githubApiErrorDetail("not json")).toBeNull();
+    expect(githubApiErrorDetail(JSON.stringify({ message: " " }))).toBeNull();
   });
 });

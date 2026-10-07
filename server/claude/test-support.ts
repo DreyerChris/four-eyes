@@ -66,14 +66,22 @@ export const seedReviewWithHunks = (ctx: AppContext, filePaths: readonly string[
   return { review, round, hunks };
 };
 
-export type ScriptedStep = { readonly output: unknown; readonly sessionId?: string; readonly usage?: RunUsage } | Error;
+export type ScriptedStep = { readonly output: unknown; readonly sessionId?: string; readonly usage?: RunUsage } | Error | "hang";
 
 export interface ScriptedRunner extends ClaudeRunner {
   readonly structuredRequests: readonly StructuredRunRequest[];
   readonly streamingRequests: readonly StreamingRunRequest[];
 }
 
-/** A runner that replays the given structured outputs (or throws the given errors) in order, recording every request. */
+/** Never settles until the request is aborted, then rejects with the abort reason. */
+const hangUntilAborted = (signal: AbortSignal | undefined): Promise<never> =>
+  new Promise((_resolve, reject) => {
+    if (signal === undefined) return;
+    if (signal.aborted) reject(signal.reason);
+    signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+  });
+
+/** A runner that replays the given structured outputs (or throws the given errors, or hangs) in order, recording every request. */
 export const createScriptedRunner = (
   steps: readonly ScriptedStep[],
   stream: (request: StreamingRunRequest) => readonly StreamingRunEvent[] = () => [],
@@ -86,6 +94,7 @@ export const createScriptedRunner = (
     structuredRequests.push(request);
     if (step === undefined) throw new Error(`Scripted runner has no step ${structuredRequests.length}`);
     if (step instanceof Error) throw step;
+    if (step === "hang") return hangUntilAborted(request.signal);
     return { output: step.output, sessionId: step.sessionId ?? `scripted-${structuredRequests.length}`, usage: step.usage ?? SCRIPTED_USAGE };
   };
 

@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { ApplyRefreshResponseSchema, ReviewDetailResponseSchema, buildPath, routes } from "../../shared/api";
 import { FIXTURE_PR_URL, expectNoA11yViolations, ingestFixturePr, removeFixturePr } from "../fixtures";
-import { prHead, pushCommit, resetPrHead, setPrState } from "./fake-remote";
+import { prHead, pushCommit, resetPrHead, setPrState, submittedReviews } from "./fake-remote";
 
 const TITLE = "Add email to users and send a welcome mail";
 
@@ -135,7 +135,7 @@ test("full review journey: paste, step with the keyboard, ask, summary, copy, fi
 
   await expect(page).toHaveURL(new RegExp(`/reviews/${reviewId}/summary$`));
   await expect(page.getByRole("heading", { level: 1, name: `summary: ${TITLE}` })).toBeVisible();
-  await expect(page.getByText("Request changes", { exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "verdict" }).getByText("Request changes", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Bug (1)" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Nit (1)" })).toBeVisible();
   await expect(page.getByText("Chunks reviewed: 3 of 5")).toBeVisible();
@@ -343,4 +343,42 @@ test("a commit that only moves an added line past an unchanged one lands in a ne
   } finally {
     resetPrHead(originalHead);
   }
+});
+
+test("submits an approval without a comment and a change request with one to GitHub", async ({ page, request }) => {
+  const reviewId = await ingestFixturePr(request);
+  const before = submittedReviews().length;
+  await page.goto(`/reviews/${reviewId}/summary`);
+  const panel = page.getByRole("region", { name: "submit to GitHub" });
+  await expect(panel.getByText(`on commit ${prHead().slice(0, 7)}`)).toBeVisible();
+
+  await panel.getByRole("radio", { name: "Approve" }).check();
+  await panel.getByRole("button", { name: "Approve on GitHub" }).click();
+  await expect(panel.getByRole("link", { name: "View it on GitHub" })).toHaveAttribute("href", `${FIXTURE_PR_URL}#pullrequestreview-${before + 1}`);
+
+  await panel.getByRole("radio", { name: "Request changes" }).check();
+  await expect(panel.getByRole("button", { name: "Request changes on GitHub" })).toBeDisabled();
+  await panel.getByLabel("Your comment").fill("Send the welcome mail after saving.");
+  await expectNoA11yViolations(page);
+  await panel.getByRole("button", { name: "Request changes on GitHub" }).click();
+  await expect(panel.getByRole("link", { name: "View it on GitHub" })).toHaveAttribute("href", `${FIXTURE_PR_URL}#pullrequestreview-${before + 2}`);
+
+  expect(submittedReviews().slice(before)).toEqual([
+    { event: "approve", body: null, commitId: prHead() },
+    { event: "request_changes", body: "Send the welcome mail after saving.", commitId: prHead() },
+  ]);
+});
+
+test("runs Claude's review again from the summary and logs a second review run", async ({ page, request }) => {
+  const reviewId = await ingestFixturePr(request);
+  await page.goto(`/reviews/${reviewId}/summary`);
+  const verdict = page.getByRole("region", { name: "verdict" });
+  await expect(verdict.getByText("Request changes", { exact: true })).toBeVisible({ timeout: 30_000 });
+
+  await verdict.getByRole("button", { name: "Run review again" }).click();
+  await expect(statusBar(page)).toContainText("Started a new Claude review");
+  const runs = page.getByRole("table", { name: "Claude runs for this review" });
+  await expect(runs.getByRole("row").filter({ hasText: /^Review/ })).toHaveCount(2, { timeout: 30_000 });
+  await expect(runs.getByRole("row").filter({ hasText: /^Review/ }).filter({ hasText: "succeeded" })).toHaveCount(2, { timeout: 30_000 });
+  await expect(verdict.getByText("Request changes", { exact: true })).toBeVisible();
 });

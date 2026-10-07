@@ -1,5 +1,14 @@
 import { useId, useState, type FormEvent, type ReactElement } from "react";
-import { MODEL_IDS, THEMES, type ClaudeExecutableSource, type ModelSettings, type Settings, type Theme } from "@shared/domain";
+import {
+  MODEL_IDS,
+  THEMES,
+  VERBOSITIES,
+  type ClaudeExecutableSource,
+  type ModelSettings,
+  type Settings,
+  type Theme,
+  type Verbosity,
+} from "@shared/domain";
 import { useClaudeExecutable, useSettings, useUpdateSettings } from "../../../api/queries";
 import type { Route } from "../../../app/router";
 import { flashStatus } from "../../../bus/context";
@@ -43,7 +52,14 @@ const ClaudeExecutableStatusLine = ({ id }: { readonly id: string }): ReactEleme
   );
 };
 
+const VERBOSITY_LABELS: Readonly<Record<Verbosity, string>> = {
+  brief: "brief: a sentence or two",
+  standard: "standard",
+  detailed: "detailed: full explanations",
+};
+
 const isTheme = (value: string): value is Theme => (THEMES as readonly string[]).includes(value);
+const isVerbosity = (value: string): value is Verbosity => (VERBOSITIES as readonly string[]).includes(value);
 
 const SettingsForm = ({ settings }: { readonly settings: Settings }): ReactElement => {
   const baseId = useId();
@@ -51,6 +67,7 @@ const SettingsForm = ({ settings }: { readonly settings: Settings }): ReactEleme
   const [models, setModels] = useState<ModelSettings>(settings.models);
   const [inlineFindings, setInlineFindings] = useState(settings.inlineFindings);
   const [theme, setTheme] = useState<Theme>(settings.theme);
+  const [verbosity, setVerbosity] = useState<Verbosity>(settings.verbosity);
   const [claudePath, setClaudePath] = useState(settings.claudePath ?? "");
   const blankModel = MODEL_FIELDS.find((field) => models[field.key].trim() === "");
 
@@ -64,7 +81,7 @@ const SettingsForm = ({ settings }: { readonly settings: Settings }): ReactEleme
       qaOpus: models.qaOpus.trim(),
     };
     update.mutate(
-      { models: trimmed, inlineFindings, theme, claudePath: claudePath.trim() === "" ? null : claudePath.trim() },
+      { models: trimmed, inlineFindings, theme, verbosity, claudePath: claudePath.trim() === "" ? null : claudePath.trim() },
       {
         onSuccess: () => {
           flashStatus("Settings saved");
@@ -116,6 +133,26 @@ const SettingsForm = ({ settings }: { readonly settings: Settings }): ReactEleme
       </fieldset>
       <fieldset className={styles.fieldset}>
         <legend>Review</legend>
+        <div className={styles.row}>
+          <label htmlFor={`${baseId}-verbosity`}>Claude's output length</label>
+          <select
+            id={`${baseId}-verbosity`}
+            value={verbosity}
+            aria-describedby={`${baseId}-verbosity-hint`}
+            onChange={(event) => {
+              if (isVerbosity(event.target.value)) setVerbosity(event.target.value);
+            }}
+          >
+            {VERBOSITIES.map((level) => (
+              <option key={level} value={level}>
+                {VERBOSITY_LABELS[level]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <p id={`${baseId}-verbosity-hint`} className={styles.hint}>
+          How much Claude writes in chunk explanations, findings, the verdict and answers. Applies to new reviews and questions.
+        </p>
         <div className={styles.check}>
           <input
             id={`${baseId}-inline`}
@@ -175,7 +212,7 @@ const SettingsDialog = (): ReactElement => {
   );
 };
 
-/** Settings panel (models, Claude executable, inline findings, theme). Renders as a fixed-position overlay; returns null while closed. */
+/** Settings panel (models, Claude executable, output length, inline findings, theme). Renders as a fixed-position overlay; returns null while closed. */
 export const SettingsPanel = (_props: SettingsPanelProps): ReactElement | null => {
   const open = useIsOverlayOpen("settings");
   useKeyBinding({ id: "shell-settings", key: ",", scope: "global", description: "settings", handler: () => openOverlay("settings") });

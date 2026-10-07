@@ -4,6 +4,7 @@ import { createTestContext, type TestContextHandle } from "../test/context";
 import { createScriptedRunner, seedReviewWithHunks } from "./test-support";
 import { numberPatchLines } from "./format";
 import { buildReviewPrompt, runReview, validateReviewResult } from "./review";
+import { OUTPUT_LENGTH_RULES } from "./verbosity";
 
 interface ResultFinding {
   readonly hunkIds: readonly string[];
@@ -146,11 +147,20 @@ describe("runReview", () => {
   it("includes PR metadata and hunk IDs in the prompt", () => {
     handle = createTestContext();
     const { review, hunks } = seedReviewWithHunks(handle.ctx, ["src/a.ts"]);
-    const prompt = buildReviewPrompt(review, hunks);
+    const prompt = buildReviewPrompt(review, hunks, "standard");
     expect(prompt).toContain(review.title);
     expect(prompt).toContain(`### ${hunks[0]?.id}`);
     expect(prompt).toContain("  old   new |");
     expect(prompt).toContain("range:");
+  });
+
+  it("asks for findings and a verdict of the length set by the verbosity setting", () => {
+    handle = createTestContext();
+    const { review, hunks } = seedReviewWithHunks(handle.ctx, ["src/a.ts"]);
+    const prompt = buildReviewPrompt(review, hunks, "detailed");
+    expect(prompt).toContain(OUTPUT_LENGTH_RULES.detailed.finding);
+    expect(prompt).toContain(OUTPUT_LENGTH_RULES.detailed.verdictSummary);
+    expect(prompt).not.toContain(OUTPUT_LENGTH_RULES.standard.verdictSummary);
   });
 });
 

@@ -1,18 +1,31 @@
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, readFile, readdir, rename, rm } from "node:fs/promises";
+import { appendFile, copyFile, mkdir, readFile, readdir, rename, rm } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { GhStateSchema, type GhState, type PrMeta, type PrRef } from "@shared/domain";
+import { GhStateSchema, type GhState, type GitHubReviewEvent, type PrMeta, type PrRef } from "@shared/domain";
 import type { AppConfig } from "../config";
 import { HttpError, errorMessage } from "../lib/errors";
 import { CommandError, runCommand, runCommandRaw } from "./exec";
 import { prWebUrl } from "./pr-url";
 
+export interface GitHubReviewSubmission {
+  readonly event: GitHubReviewEvent;
+  readonly body: string | null;
+  readonly commitId: string;
+}
+
+export interface SubmittedGitHubReview {
+  readonly url: string;
+}
+
 export interface GitHubClient {
   readonly fetchPr: (ref: PrRef) => Promise<PrMeta>;
   readonly remoteUrl: (ref: PrRef) => string;
+  readonly submitReview: (ref: PrRef, submission: GitHubReviewSubmission) => Promise<SubmittedGitHubReview>;
 }
+
+const GH_ENV: NodeJS.ProcessEnv = { ...process.env, GH_PROMPT_DISABLED: "1", NO_COLOR: "1", GH_NO_UPDATE_NOTIFIER: "1" };
 
 const GH_FIELDS = ["title", "author", "url", "state", "headRefOid", "baseRefOid", "headRefName", "baseRefName"] as const;
 
@@ -71,20 +84,89 @@ const ghError = (ref: PrRef, error: unknown): HttpError => {
   return new HttpError(502, `gh pr view failed for ${label}: ${stderr.trim().split("\n").slice(-3).join(" ")}`);
 };
 
-/** Real client over the `gh` CLI, using the user's existing logins. Read-only: never writes to GitHub. */
+const API_REVIEW_EVENTS: Readonly<Record<GitHubReviewEvent, string>> = {
+  approve: "APPROVE",
+  comment: "COMMENT",
+  request_changes: "REQUEST_CHANGES",
+};
+
+/** `gh api` arguments that create a submitted (not pending) review on the given commit. */
+export const ghReviewArgs = (ref: PrRef, submission: GitHubReviewSubmission): readonly string[] => [
+  "api",
+  "--hostname",
+  ref.host,
+  "--method",
+  "POST",
+  `repos/${ref.owner}/${ref.repo}/pulls/${ref.number}/reviews`,
+  "-f",
+  `event=${API_REVIEW_EVENTS[submission.event]}`,
+  "-f",
+  `commit_id=${submission.commitId}`,
+  ...(submission.body === null ? [] : ["-f", `body=${submission.body}`]),
+];
+
+const GhApiErrorSchema = z.object({
+  message: z.string().optional(),
+  errors: z.array(z.union([z.string(), z.object({ message: z.string() })])).optional(),
+});
+
+/** GitHub's reason for refusing an API call, read from the JSON body `gh api` prints. Null when there is none. */
+export const githubApiErrorDetail = (stdout: string): string | null => {
+  const parsed = ((): z.infer<typeof GhApiErrorSchema> | null => {
+    try {
+      const result = GhApiErrorSchema.safeParse(JSON.parse(stdout));
+      return result.success ? result.data : null;
+    } catch {
+      return null;
+    }
+  })();
+  if (parsed === null) return null;
+  const errors = (parsed.errors ?? []).map((error) => (typeof error === "string" ? error : error.message));
+  const detail = errors.length > 0 ? errors.join("; ") : parsed.message;
+  return detail === undefined || detail.trim() === "" ? null : detail;
+};
+
+const ghReviewError = (ref: PrRef, output: { readonly stdout: string; readonly stderr: string }): HttpError => {
+  const label = `${ref.host}/${ref.owner}/${ref.repo}#${ref.number}`;
+  const { stderr } = output;
+  if (/auth login|not logged in|authentication|HTTP 401/i.test(stderr)) {
+    return new HttpError(502, `gh is not logged in to ${ref.host}. Run: gh auth login --hostname ${ref.host}`);
+  }
+  if (/HTTP 404/.test(stderr)) return new HttpError(404, `Pull request ${label} was not found, or your gh login cannot review it`);
+  const detail = githubApiErrorDetail(output.stdout) ?? stderr.trim().split("\n").slice(-3).join(" ");
+  if (/HTTP 4\d\d/.test(stderr)) return new HttpError(422, `GitHub refused the review on ${label}: ${detail}`);
+  return new HttpError(502, `Could not submit the review to ${label}: ${detail}`);
+};
+
+const SubmittedReviewSchema = z.object({ html_url: z.string() });
+
+const submittedReviewUrl = (ref: PrRef, stdout: string): string => {
+  try {
+    const parsed = SubmittedReviewSchema.safeParse(JSON.parse(stdout));
+    return parsed.success ? parsed.data.html_url : prWebUrl(ref);
+  } catch {
+    return prWebUrl(ref);
+  }
+};
+
+/** Real client over the `gh` CLI, using the user's existing logins. Only submitReview writes to GitHub. */
 export const createGhCliClient = (): GitHubClient => ({
   fetchPr: async (ref: PrRef): Promise<PrMeta> => {
     const args = ["pr", "view", String(ref.number), "--repo", `${ref.host}/${ref.owner}/${ref.repo}`, "--json", GH_FIELDS.join(",")];
-    const output = await runCommandRaw("gh", args, {
-      env: { ...process.env, GH_PROMPT_DISABLED: "1", NO_COLOR: "1", GH_NO_UPDATE_NOTIFIER: "1" },
-      timeoutMs: 60_000,
-    }).catch((error: unknown) => {
+    const output = await runCommandRaw("gh", args, { env: GH_ENV, timeoutMs: 60_000 }).catch((error: unknown) => {
       throw ghError(ref, error);
     });
     if (output.exitCode !== 0) throw ghError(ref, new CommandError("gh pr view", output.exitCode, output.stderr));
     return parseGhPrJson(output.stdout);
   },
   remoteUrl: (ref: PrRef): string => `https://${ref.host}/${ref.owner}/${ref.repo}.git`,
+  submitReview: async (ref: PrRef, submission: GitHubReviewSubmission): Promise<SubmittedGitHubReview> => {
+    const output = await runCommandRaw("gh", ghReviewArgs(ref, submission), { env: GH_ENV, timeoutMs: 60_000 }).catch((error: unknown) => {
+      throw new HttpError(502, `Could not run gh to submit the review: ${errorMessage(error)}`);
+    });
+    if (output.exitCode !== 0) throw ghReviewError(ref, output);
+    return { url: submittedReviewUrl(ref, output.stdout) };
+  },
 });
 
 export const FAKE_PR_URL = "https://github.com/four-eyes-fixture/demo/pull/1";
@@ -166,6 +248,9 @@ const buildFakeRepo = async (repoDir: string): Promise<void> => {
 /** File inside the fake repo's .git directory that sets the fixture PR's state ("open", "merged" or "closed"). Missing means open. */
 export const FAKE_PR_STATE_FILE = "four-eyes-pr-state";
 
+/** File inside the fake repo's .git directory where submitted reviews are appended, one JSON object per line. */
+export const FAKE_REVIEWS_FILE = "four-eyes-reviews.jsonl";
+
 const readFakeState = async (repoDir: string): Promise<GhState> => {
   const raw = await readFile(join(repoDir, ".git", FAKE_PR_STATE_FILE), "utf8").catch((error: unknown) => {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") return "open";
@@ -227,6 +312,20 @@ export const createFakeGitHubClient = (config: AppConfig): GitHubClient => {
     remoteUrl: (ref: PrRef): string => {
       requireFake(ref);
       return repoDir;
+    },
+    submitReview: async (ref: PrRef, submission: GitHubReviewSubmission): Promise<SubmittedGitHubReview> => {
+      requireFake(ref);
+      await ensureRepo();
+      const file = join(repoDir, ".git", FAKE_REVIEWS_FILE);
+      const count = await readFile(file, "utf8").then(
+        (text) => text.split("\n").filter((line) => line.trim() !== "").length,
+        (error: unknown) => {
+          if (error instanceof Error && "code" in error && error.code === "ENOENT") return 0;
+          throw new Error(`Could not read the fake review log at ${file}: ${errorMessage(error)}`, { cause: error });
+        },
+      );
+      await appendFile(file, `${JSON.stringify(submission)}\n`);
+      return { url: `${FAKE_PR_URL}#pullrequestreview-${count + 1}` };
     },
   };
 };

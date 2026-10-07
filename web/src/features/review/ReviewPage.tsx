@@ -16,6 +16,7 @@ import type { ContextCommand } from "./diff/HunkView";
 import { STATUS_LABELS, STATUS_MARKS } from "./labels";
 import { NoteEditor } from "./NoteEditor";
 import { findUnseen, orderChunks, resolveChunkIndex } from "./ordering";
+import { RerunReviewButton } from "./RerunReviewButton";
 import styles from "./review.module.css";
 
 export interface ReviewPageProps {
@@ -206,6 +207,7 @@ const Stepper = ({ detail, chunkId, settings, events }: StepperProps): ReactElem
         <span className={styles.muted}>{review.ghState}</span>
         {readOnly ? <span className={styles.tag}>past, read-only</span> : null}
         <span className={styles.muted}>{runStatus ? RUN_STATUS_TEXT[runStatus] : "Claude review not started"}</span>
+        {!readOnly && (runStatus === "running" || runStatus === "failed") ? <RerunReviewButton reviewId={reviewId} status={runStatus} /> : null}
         <Link to={paths.summary(reviewId)}>summary →</Link>
       </div>
       {chunks.length > 0 ? <ChunkProgressBar chunks={chunks} currentIndex={index} onSelect={goTo} /> : null}

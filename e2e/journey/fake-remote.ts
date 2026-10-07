@@ -33,6 +33,22 @@ export const setPrState = (state: "open" | "merged" | "closed"): void => {
   else writeFileSync(file, `${state}\n`);
 };
 
+/** Reviews submitted to the fixture PR, oldest first, as the fake client logged them. */
+export const submittedReviews = (): readonly unknown[] => {
+  const file = join(fakeRemoteDir(), ".git", "four-eyes-reviews.jsonl");
+  const text = (() => {
+    try {
+      return readFileSync(file, "utf8");
+    } catch {
+      return "";
+    }
+  })();
+  return text
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .map((line) => JSON.parse(line) as unknown);
+};
+
 /** Current head SHA of the fixture PR. */
 export const prHead = (): string => git(fakeRemoteDir(), ["rev-parse", PR_REF]);
 

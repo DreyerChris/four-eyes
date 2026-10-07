@@ -375,3 +375,37 @@
 .resolvedNote {
   color: var(--fg-muted);
 }
+
+.submitReview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.submitReview textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.submitReview p {
+  margin: 0;
+}
+
+.reviewEvents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2ch;
+  margin: 0;
+  padding: var(--space-1) 1ch;
+  border: 1px solid var(--border);
+}
+
+.reviewEvents label {
+  display: inline-flex;
+  gap: 0.5ch;
+  align-items: center;
+}
+
+.warning {
+  color: var(--warn);
+}

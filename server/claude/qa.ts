@@ -1,5 +1,5 @@
 import type { AskQuestionRequest, QaStreamEvent } from "@shared/api";
-import type { Chunk, Hunk, Question, Review } from "@shared/domain";
+import type { Chunk, Hunk, Question, Review, Verbosity } from "@shared/domain";
 import type { AppContext } from "../context";
 import { chunksRepo, hunksRepo, questionsRepo, reviewsRepo, settingsRepo } from "../db/repositories";
 import { errorMessage, HttpError } from "../lib/errors";
@@ -9,6 +9,7 @@ import { sessionFromError, usageFromError } from "./errors";
 import { formatHunksForPrompt } from "./format";
 import type { RunUsage } from "./runner";
 import { loggedSessionUsage, resolveWorktree, startRunLog, usageSince, ZERO_USAGE, type RunLog } from "./runs";
+import { OUTPUT_LENGTH_RULES } from "./verbosity";
 
 const QA_MAX_TURNS = 20;
 
@@ -17,6 +18,7 @@ interface QaContext {
   readonly chunk: Chunk | null;
   readonly chunkHunks: readonly Hunk[];
   readonly request: AskQuestionRequest;
+  readonly verbosity: Verbosity;
 }
 
 const chunkHunksFor = (ctx: AppContext, reviewId: string, chunkId: string): readonly Hunk[] => {
@@ -41,7 +43,7 @@ const lineRange = (request: AskQuestionRequest): string => {
 const prPreamble = (review: Review): readonly string[] => [
   "You are answering a reviewer's questions about a pull request. The PR's code is checked out at the head commit in your working directory.",
   "You can use Read, Grep, Glob and git log / git blame / git show to look things up. You cannot edit files.",
-  "Answer in plain, direct language. Use short code references (path:line) where they help. Keep answers focused on the question.",
+  "Answer in plain, direct language. Use short code references (path:line) where they help.",
   "",
   `PR: ${review.title}`,
   `Author: ${review.author}`,
@@ -52,7 +54,7 @@ const prPreamble = (review: Review): readonly string[] => [
 
 /** Prompt for one Q&A turn. A new session gets the PR preamble; a resumed one only gets the question and its location. */
 export const buildQaPrompt = (qa: QaContext, newSession: boolean): string => {
-  const { review, chunk, chunkHunks, request } = qa;
+  const { review, chunk, chunkHunks, request, verbosity } = qa;
   const location = request.filePath === null ? [] : [`File: ${request.filePath}${lineRange(request)}`];
   const selection =
     request.selectedText === null || request.selectedText.trim() === ""
@@ -69,6 +71,8 @@ export const buildQaPrompt = (qa: QaContext, newSession: boolean): string => {
     ...location,
     ...selection,
     "",
+    OUTPUT_LENGTH_RULES[verbosity].answer,
+    "",
     "Question:",
     request.question,
   ].join("\n");
@@ -79,12 +83,13 @@ const loadQaContext = (ctx: AppContext, reviewId: string, request: AskQuestionRe
   if (review.status === "past") {
     throw new HttpError(409, `Review ${reviewId} is in Past and read-only. Add the PR again to reopen it before asking questions.`);
   }
-  if (request.chunkId === null) return { review, chunk: null, chunkHunks: [], request };
+  const { verbosity } = settingsRepo.getSettings(ctx.db);
+  if (request.chunkId === null) return { review, chunk: null, chunkHunks: [], request, verbosity };
   const chunk = chunksRepo.getChunk(ctx.db, request.chunkId);
   if (chunk === undefined || chunk.reviewId !== reviewId) {
     throw new HttpError(404, `Chunk ${request.chunkId} does not belong to review ${reviewId}`);
   }
-  return { review, chunk, chunkHunks: chunkHunksFor(ctx, reviewId, chunk.id), request };
+  return { review, chunk, chunkHunks: chunkHunksFor(ctx, reviewId, chunk.id), request, verbosity };
 };
 
 interface StreamedAnswer {

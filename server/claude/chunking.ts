@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { CHUNK_PLAN_JSON_SCHEMA, ChunkPlanSchema, type ChunkPlan, type PlannedChunk } from "@shared/claude";
-import type { Chunk, Hunk } from "@shared/domain";
+import type { Chunk, Hunk, Verbosity } from "@shared/domain";
 import { err, ok, type Result } from "@shared/result";
 import type { AppContext } from "../context";
 import { chunksRepo, hunksRepo, reviewsRepo, settingsRepo } from "../db/repositories";
@@ -10,6 +10,7 @@ import { fallbackChunkPlan } from "./fallback";
 import { formatHunksForPrompt } from "./format";
 import { resolveWorktree, startRunLog, ZERO_USAGE, type RunOutcome } from "./runs";
 import { runStructuredWithRetry } from "./structured";
+import { OUTPUT_LENGTH_RULES } from "./verbosity";
 
 export interface RoundRunInput {
   readonly reviewId: string;
@@ -56,7 +57,7 @@ const saveChunks = (ctx: AppContext, input: RoundRunInput, plan: ChunkPlan): rea
   });
 
 const retryPrompt =
-  (hunks: readonly Hunk[]) =>
+  (hunks: readonly Hunk[], verbosity: Verbosity) =>
   (error: string, resumed: boolean): string => {
     const correction = [
       "Your previous chunk plan was rejected:",
@@ -64,7 +65,7 @@ const retryPrompt =
       "",
       "Return a corrected plan. Use every hunk ID exactly once and only the IDs listed.",
     ].join("\n");
-    return resumed ? correction : `${buildChunkingPrompt(hunks)}\n\n## Previous attempt\n${correction}`;
+    return resumed ? correction : `${buildChunkingPrompt(hunks, verbosity)}\n\n## Previous attempt\n${correction}`;
   };
 
 /**
@@ -76,7 +77,8 @@ export const runChunking = async (ctx: AppContext, input: RoundRunInput): Promis
   const review = reviewsRepo.requireReview(ctx.db, input.reviewId);
   const hunks = hunksRepo.listHunks(ctx.db, input.reviewId, { roundId: input.roundId });
   const hunkIds = hunks.map((hunk) => hunk.id);
-  const model = settingsRepo.getSettings(ctx.db).models.chunking;
+  const settings = settingsRepo.getSettings(ctx.db);
+  const model = settings.models.chunking;
   ctx.events.publish(input.reviewId, { type: "step", step: "chunking", state: "started", message: `${hunks.length} hunks` });
 
   if (hunks.length === 0) {
@@ -98,12 +100,12 @@ export const runChunking = async (ctx: AppContext, input: RoundRunInput): Promis
       kind: "chunking",
       model,
       cwd,
-      prompt: buildChunkingPrompt(hunks),
+      prompt: buildChunkingPrompt(hunks, settings.verbosity),
       jsonSchema: CHUNK_PLAN_JSON_SCHEMA,
       hunkIds,
       maxTurns: CHUNKING_MAX_TURNS,
       validate: (raw) => validateChunkPlan(raw, hunkIds),
-      retryPrompt: retryPrompt(hunks),
+      retryPrompt: retryPrompt(hunks, settings.verbosity),
     });
     claudeOutcome = outcome;
     const plan = outcome.ok ? outcome.value : fallbackChunkPlan(hunks);
@@ -133,7 +135,7 @@ export const runChunking = async (ctx: AppContext, input: RoundRunInput): Promis
 };
 
 /** Prompt asking Claude to group and order hunk IDs (types → logic → wiring → tests → skim), 5–40 changed lines per chunk. */
-export const buildChunkingPrompt = (hunks: readonly Hunk[]): string =>
+export const buildChunkingPrompt = (hunks: readonly Hunk[], verbosity: Verbosity): string =>
   [
     "You are helping a human review a pull request one small piece at a time.",
     "Group the hunks below into chunks and put the chunks in the order a reviewer should read them.",
@@ -145,7 +147,7 @@ export const buildChunkingPrompt = (hunks: readonly Hunk[]): string =>
     "- Order: types and data models first, then core logic, then wiring (routes, config, dependency setup), then tests.",
     '- Put noisy changes a reviewer only needs to skim (lockfiles, generated code, snapshots, pure renames or formatting) last, with kind "skim". Everything else is kind "core".',
     "- title: a short imperative phrase naming what the chunk does (for example \"Add email to the User type\").",
-    "- explanation: two or three plain sentences on what changed and why it matters, so the reviewer knows what to look for.",
+    `- ${OUTPUT_LENGTH_RULES[verbosity].chunkExplanation}`,
     "- You may use Read, Grep, Glob and git log/blame/show in the PR worktree for context, but keep it brief.",
     "",
     `## Hunks (${hunks.length})`,

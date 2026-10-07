@@ -28,3 +28,7 @@ export const getLatestRun = (db: DbExecutor, reviewId: string, kind: ClaudeRunKi
     .orderBy(desc(claudeRuns.startedAt))
     .limit(1)
     .get();
+
+/** Marks every run still recorded as running as failed with the given error. Returns how many were changed. */
+export const failRunningRuns = (db: DbExecutor, error: string, finishedAt: string): number =>
+  db.update(claudeRuns).set({ status: "failed", error, finishedAt }).where(eq(claudeRuns.status, "running")).returning().all().length;
