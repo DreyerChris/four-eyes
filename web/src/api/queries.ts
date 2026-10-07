@@ -22,7 +22,18 @@ import type {
   UpdateChunkProgressRequest,
   UpdateSettingsRequest,
 } from "@shared/api";
-import type { ChunkProgress, ClaudeExecutableStatus, Finding, ProgressEvent, Question, RefreshStatus, ReviewStatus, Settings } from "@shared/domain";
+import {
+  DEFAULT_SETTINGS,
+  type ChunkProgress,
+  type ClaudeExecutableStatus,
+  type Finding,
+  type ProgressEvent,
+  type Question,
+  type RefreshStatus,
+  type ReviewStatus,
+  type Settings,
+  type Theme,
+} from "@shared/domain";
 import { api } from "./client";
 
 export const queryKeys = {
@@ -88,6 +99,9 @@ export const useQuestions = (reviewId: string, chunkId?: string): UseQueryResult
 
 export const useSettings = (): UseQueryResult<Settings> =>
   useQuery({ queryKey: queryKeys.settings, queryFn: api.getSettings, staleTime: Infinity });
+
+/** The saved theme, or the default while settings load. */
+export const useTheme = (): Theme => useSettings().data?.theme ?? DEFAULT_SETTINGS.theme;
 
 export const useClaudeExecutable = (): UseQueryResult<ClaudeExecutableStatus> =>
   useQuery({ queryKey: queryKeys.claudeExecutable, queryFn: api.getClaudeExecutable });

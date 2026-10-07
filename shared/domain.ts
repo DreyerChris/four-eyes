@@ -13,7 +13,18 @@ export const VERDICT_SUGGESTIONS = ["approve", "approve_with_nits", "request_cha
 export const CLAUDE_RUN_KINDS = ["chunking", "review", "qa"] as const;
 export const CLAUDE_RUN_STATUSES = ["running", "succeeded", "failed"] as const;
 export const DIFF_LAYOUTS = ["unified", "split"] as const;
-export const THEMES = ["dark", "light"] as const;
+export const THEMES = [
+  "dark",
+  "light",
+  "tokyo-night",
+  "catppuccin-mocha",
+  "catppuccin-latte",
+  "dracula",
+  "gruvbox",
+  "nord",
+  "rose-pine",
+  "synthwave",
+] as const;
 export const VERBOSITIES = ["brief", "standard", "detailed"] as const;
 export const GITHUB_REVIEW_EVENTS = ["approve", "comment", "request_changes"] as const;
 export const MY_REVIEW_STATES = ["approved", "changes_requested", "commented", "dismissed"] as const;

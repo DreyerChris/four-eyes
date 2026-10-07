@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import type { DiffSide, Hunk } from "@shared/domain";
-import { useFileContents, useReview } from "../../../api/queries";
+import { useFileContents, useReview, useTheme } from "../../../api/queries";
 import type { Route } from "../../../app/router";
 import { useAppEvent, type OpenFileEvent } from "../../../bus/events";
 import { useKeyBinding } from "../../../keys/hooks";
@@ -17,11 +17,12 @@ export interface FileViewerProps {
 const plainLines = (content: string): readonly HighlightedLine[] => content.split("\n").map((line) => [{ content: line }]);
 
 const useHighlightedLines = (content: string | null, path: string): readonly HighlightedLine[] => {
+  const theme = useTheme();
   const [highlighted, setHighlighted] = useState<{ readonly source: string; readonly lines: readonly HighlightedLine[] } | null>(null);
   useEffect(() => {
     if (content === null) return undefined;
     let cancelled = false;
-    highlightCode(content, languageForPath(path))
+    highlightCode(content, languageForPath(path), theme)
       .then((lines) => {
         if (!cancelled) setHighlighted({ source: content, lines });
       })
@@ -31,7 +32,7 @@ const useHighlightedLines = (content: string | null, path: string): readonly Hig
     return () => {
       cancelled = true;
     };
-  }, [content, path]);
+  }, [content, path, theme]);
   if (content === null) return [];
   return highlighted?.source === content ? highlighted.lines : plainLines(content);
 };

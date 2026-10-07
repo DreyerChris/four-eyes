@@ -1,4 +1,5 @@
-import type { Highlighter } from "shiki";
+import type { BundledTheme, Highlighter } from "shiki";
+import type { Theme } from "@shared/domain";
 
 export type SyntaxKind = "comment" | "string";
 
@@ -95,7 +96,18 @@ export const languageForPath = (path: string): string => {
   return EXTENSION_LANGUAGES[name.slice(dot + 1)] ?? "text";
 };
 
-const THEME = "github-dark-default";
+const SYNTAX_THEMES: Readonly<Record<Theme, BundledTheme>> = {
+  dark: "github-dark-default",
+  light: "github-light-default",
+  "tokyo-night": "tokyo-night",
+  "catppuccin-mocha": "catppuccin-mocha",
+  "catppuccin-latte": "catppuccin-latte",
+  dracula: "dracula",
+  gruvbox: "gruvbox-dark-medium",
+  nord: "nord",
+  "rose-pine": "rose-pine",
+  synthwave: "synthwave-84",
+};
 const CACHE_LIMIT = 300;
 
 const plainLines = (code: string): readonly HighlightedLine[] => code.split("\n").map((line) => [{ content: line }]);
@@ -122,7 +134,7 @@ let highlighterPromise: Promise<{ readonly highlighter: Highlighter; readonly kn
 const loadHighlighter = (): Promise<{ readonly highlighter: Highlighter; readonly known: ReadonlySet<string> }> => {
   highlighterPromise ??= import("shiki")
     .then(async (shiki) => ({
-      highlighter: await shiki.createHighlighter({ themes: [THEME], langs: [], engine: shiki.createJavaScriptRegexEngine() }),
+      highlighter: await shiki.createHighlighter({ themes: [], langs: [], engine: shiki.createJavaScriptRegexEngine() }),
       known: new Set([...Object.keys(shiki.bundledLanguages), ...Object.keys(shiki.bundledLanguagesAlias)]),
     }))
     .catch((error: unknown) => {
@@ -145,6 +157,19 @@ const ensureLanguage = (highlighter: Highlighter, language: string): Promise<voi
   return load;
 };
 
+const themeLoads = new Map<BundledTheme, Promise<void>>();
+
+const ensureTheme = (highlighter: Highlighter, theme: BundledTheme): Promise<void> => {
+  const existing = themeLoads.get(theme);
+  if (existing) return existing;
+  const load = highlighter.loadTheme(theme).catch((error: unknown) => {
+    themeLoads.delete(theme);
+    throw error;
+  });
+  themeLoads.set(theme, load);
+  return load;
+};
+
 const cache = new Map<string, readonly HighlightedLine[]>();
 
 const remember = (key: string, lines: readonly HighlightedLine[]): readonly HighlightedLine[] => {
@@ -157,20 +182,21 @@ const remember = (key: string, lines: readonly HighlightedLine[]): readonly High
 };
 
 /**
- * Highlights code into per-line tokens, loading Shiki and the language lazily on first use.
+ * Highlights code into per-line tokens in the syntax colours that match the app theme, loading Shiki, the language and the colours lazily on first use.
  * Falls back to plain, uncoloured lines for unknown languages; rejects if Shiki itself fails to load.
  */
-export const highlightCode = async (code: string, language: string): Promise<readonly HighlightedLine[]> => {
+export const highlightCode = async (code: string, language: string, theme: Theme): Promise<readonly HighlightedLine[]> => {
   if (language === "text") return plainLines(code);
-  const key = `${language}\u0000${code}`;
+  const syntaxTheme = SYNTAX_THEMES[theme];
+  const key = `${syntaxTheme}\u0000${language}\u0000${code}`;
   const cached = cache.get(key);
   if (cached) return cached;
   const { highlighter, known } = await loadHighlighter();
   if (!known.has(language)) return plainLines(code);
-  await ensureLanguage(highlighter, language);
+  await Promise.all([ensureLanguage(highlighter, language), ensureTheme(highlighter, syntaxTheme)]);
   const tokens = highlighter.codeToTokensBase(code, {
     lang: language as Parameters<Highlighter["codeToTokensBase"]>[1]["lang"],
-    theme: THEME,
+    theme: syntaxTheme,
     includeExplanation: "scopeName",
   });
   return remember(

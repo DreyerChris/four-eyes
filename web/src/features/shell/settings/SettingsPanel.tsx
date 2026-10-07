@@ -58,6 +58,19 @@ const VERBOSITY_LABELS: Readonly<Record<Verbosity, string>> = {
   detailed: "detailed: full explanations",
 };
 
+const THEME_LABELS: Readonly<Record<Theme, string>> = {
+  dark: "dark",
+  light: "light",
+  "tokyo-night": "Tokyo Night",
+  "catppuccin-mocha": "Catppuccin Mocha",
+  "catppuccin-latte": "Catppuccin Latte (light)",
+  dracula: "Dracula",
+  gruvbox: "Gruvbox",
+  nord: "Nord",
+  "rose-pine": "Rosé Pine",
+  synthwave: "Synthwave '84",
+};
+
 const isTheme = (value: string): value is Theme => (THEMES as readonly string[]).includes(value);
 const isVerbosity = (value: string): value is Verbosity => (VERBOSITIES as readonly string[]).includes(value);
 
@@ -195,8 +208,11 @@ const SettingsForm = ({ settings }: { readonly settings: Settings }): ReactEleme
               if (isTheme(event.target.value)) setTheme(event.target.value);
             }}
           >
-            <option value="dark">dark</option>
-            <option value="light">light (preview)</option>
+            {THEMES.map((option) => (
+              <option key={option} value={option}>
+                {THEME_LABELS[option]}
+              </option>
+            ))}
           </select>
         </div>
       </fieldset>

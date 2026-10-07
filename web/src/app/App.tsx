@@ -1,7 +1,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState, type ReactElement } from "react";
 import { createQueryClient } from "../api/queryClient";
-import { useSettings } from "../api/queries";
+import { useTheme } from "../api/queries";
 import { ReviewPage } from "../features/review/ReviewPage";
 import { SummaryPage } from "../features/review/SummaryPage";
 import { ListPage } from "../features/shell/list/ListPage";
@@ -49,10 +49,10 @@ const Page = ({ route }: { readonly route: Route }): ReactElement => {
 };
 
 const ThemeSync = (): null => {
-  const { data } = useSettings();
+  const theme = useTheme();
   useEffect(() => {
-    document.documentElement.dataset.theme = data?.theme ?? "dark";
-  }, [data?.theme]);
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
   return null;
 };
 
