@@ -31,6 +31,23 @@ describe("app", () => {
     return SeedFixtureResponseSchema.parse(await res.json()).reviewId;
   };
 
+  it("refuses requests addressed to another host name, so DNS rebinding cannot reach the API", async () => {
+    const res = await app.request("http://attacker.example/api/health");
+    expect(res.status).toBe(403);
+    expect((await app.request("http://127.0.0.1/api/health")).status).toBe(200);
+    expect((await app.request("http://[::1]/api/health")).status).toBe(200);
+  });
+
+  it("refuses state-changing requests from another site's page and allows the app's own", async () => {
+    const reviewId = await seed();
+    const rerun = async (origin: string): Promise<number> =>
+      (await app.request(buildPath(routes.rerunReview.path, { reviewId }), { method: "POST", headers: { origin } })).status;
+    expect(await rerun("https://attacker.example")).toBe(403);
+    expect(await rerun("null")).toBe(403);
+    expect(await rerun("http://localhost:5173")).toBe(200);
+    expect((await app.request(routes.listReviews.path, { headers: { origin: "https://attacker.example" } })).status).toBe(200);
+  });
+
   it("answers health checks", async () => {
     const res = await app.request("/api/health");
     expect(await res.json()).toEqual({ ok: true, fakeClaude: true });

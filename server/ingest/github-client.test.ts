@@ -14,6 +14,7 @@ import {
   githubApiErrorDetail,
   parseGhPrJson,
   parseGhSearchJson,
+  parseViewerReviewJson,
 } from "./github-client";
 import { parsePrUrl } from "./pr-url";
 
@@ -114,10 +115,11 @@ describe("createFakeGitHubClient", () => {
       .trim()
       .split("\n")
       .map((line) => JSON.parse(line) as unknown);
-    expect(log).toEqual([
+    expect(log).toMatchObject([
       { event: "approve", body: null, commitId: "abc" },
       { event: "comment", body: "Looks good", commitId: "def" },
     ]);
+    expect(await client.fetchViewerReview(ref)).toMatchObject({ state: "commented", commitSha: "def" });
   });
 });
 
@@ -165,7 +167,7 @@ describe("githubApiErrorDetail", () => {
 });
 
 describe("parseGhSearchJson", () => {
-  const item = (repositoryUrl: string, login: string | null): unknown => ({
+  const item = (repositoryUrl: string, login: string | null): Readonly<Record<string, unknown>> => ({
     html_url: "https://ghe.example.com/team/svc/pull/4",
     number: 4,
     title: "Retry uploads",
@@ -184,6 +186,12 @@ describe("parseGhSearchJson", () => {
     ]);
   });
 
+  it("leaves out draft PRs even if the search returned them", () => {
+    const draft = { ...item("https://api.github.com/repos/acme/widgets", "alice"), number: 5, draft: true };
+    const ready = { ...item("https://api.github.com/repos/acme/widgets", "alice"), number: 6, draft: false };
+    expect(parseGhSearchJson(JSON.stringify({ items: [draft, ready] })).map((hit) => hit.number)).toEqual([6]);
+  });
+
   it("throws a readable error for unexpected output", () => {
     expect(() => parseGhSearchJson("nope")).toThrow(/invalid JSON/);
     expect(() => parseGhSearchJson(JSON.stringify({ total_count: 0 }))).toThrow(/unexpected JSON/);
@@ -197,5 +205,28 @@ describe("fake searchOpenPrs", () => {
     expect(await client.searchOpenPrs("github.com", "is:pr repo:four-eyes-fixture/demo")).toHaveLength(1);
     expect(await client.searchOpenPrs("github.com", "is:pr author:someone")).toEqual([]);
     expect(await client.searchOpenPrs("ghe.example.com", "is:pr author:octocat")).toEqual([]);
+  });
+});
+
+describe("parseViewerReviewJson", () => {
+  const response = (review: unknown): string => JSON.stringify({ data: { repository: { pullRequest: { viewerLatestReview: review } } } });
+
+  it("maps your latest submitted review", () => {
+    expect(parseViewerReviewJson(response({ state: "CHANGES_REQUESTED", submittedAt: "2026-06-01T10:00:00Z", commit: { oid: "abc" } }))).toEqual({
+      state: "changes_requested",
+      submittedAt: "2026-06-01T10:00:00.000Z",
+      commitSha: "abc",
+    });
+  });
+
+  it("treats no review, a pending review and a missing PR as none", () => {
+    expect(parseViewerReviewJson(response(null))).toBeNull();
+    expect(parseViewerReviewJson(response({ state: "PENDING", submittedAt: null, commit: null }))).toBeNull();
+    expect(parseViewerReviewJson(JSON.stringify({ data: { repository: null } }))).toBeNull();
+  });
+
+  it("throws a readable error for unexpected output", () => {
+    expect(() => parseViewerReviewJson("{")).toThrow(/invalid JSON/);
+    expect(() => parseViewerReviewJson(JSON.stringify({ errors: [] }))).toThrow(/unexpected JSON/);
   });
 });

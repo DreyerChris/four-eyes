@@ -1,4 +1,4 @@
-import type { ChunkStatus, FindingLifecycle, GitHubReviewEvent, Severity, UserVerdict, VerdictSuggestion } from "@shared/domain";
+import type { ChunkStatus, FindingLifecycle, GitHubReviewEvent, MyReviewState, Review, Severity, UserVerdict, VerdictSuggestion } from "@shared/domain";
 
 export const SEVERITY_LABELS: Readonly<Record<Severity, string>> = {
   bug: "Bug",
@@ -49,4 +49,22 @@ export const GITHUB_REVIEW_SUBMIT_LABELS: Readonly<Record<GitHubReviewEvent, str
   approve: "Approve on GitHub",
   comment: "Comment on GitHub",
   request_changes: "Request changes on GitHub",
+};
+
+export const MY_REVIEW_LABELS: Readonly<Record<MyReviewState, string>> = {
+  approved: "you approved",
+  changes_requested: "you requested changes",
+  commented: "you commented",
+  dismissed: "your review was dismissed",
+};
+
+/** True when the PR's latest known head is not the commit your GitHub review was left on. */
+export const hasCommitsSinceMyReview = (review: Pick<Review, "myReviewCommitSha" | "remoteHeadSha" | "headSha">): boolean =>
+  review.myReviewCommitSha !== null && review.myReviewCommitSha !== (review.remoteHeadSha ?? review.headSha);
+
+export const MY_REVIEW_SENTENCES: Readonly<Record<MyReviewState, string>> = {
+  approved: "You approved this PR on GitHub",
+  changes_requested: "You requested changes on this PR on GitHub",
+  commented: "You commented on this PR on GitHub",
+  dismissed: "Your GitHub review of this PR was dismissed",
 };

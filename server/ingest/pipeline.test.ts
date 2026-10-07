@@ -108,6 +108,7 @@ describe("ingest pipeline", () => {
         remoteUrl: () => "/nowhere",
         submitReview: refuseReviewSubmission,
         searchOpenPrs: async () => [],
+        fetchViewerReview: async () => null,
       },
     });
     try {

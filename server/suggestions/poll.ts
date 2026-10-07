@@ -89,13 +89,24 @@ export const pollSuggestions = (ctx: AppContext): Promise<void> => {
   return state.inflight;
 };
 
-/** Visible suggestions, leaving out PRs already added to four-eyes, plus when they were last checked. */
+const repoKey = (host: string, owner: string, repo: string): string => `${host}/${owner}/${repo}`.toLowerCase();
+
+/**
+ * Visible suggestions, leaving out PRs already added to four-eyes and, when the setting asks for it, PRs in repos
+ * with no review at all. Includes when GitHub was last checked.
+ */
 export const listSuggestions = (ctx: AppContext): SuggestionsResponse => {
   const state = stateFor(ctx);
-  const added = new Set(reviewsRepo.listReviews(ctx.db).map((review) => suggestionId(review.host, { ...review, number: review.prNumber })));
-  const suggestions = suggestionsRepo.listVisible(ctx.db).filter((suggestion) => !added.has(suggestion.id));
+  const settings = settingsRepo.getSettings(ctx.db);
+  const reviews = reviewsRepo.listReviews(ctx.db);
+  const added = new Set(reviews.map((review) => suggestionId(review.host, { ...review, number: review.prNumber })));
+  const reviewedRepos = new Set(reviews.map((review) => repoKey(review.host, review.owner, review.repo)));
+  const suggestions = suggestionsRepo
+    .listVisible(ctx.db)
+    .filter((suggestion) => !added.has(suggestion.id))
+    .filter((suggestion) => !settings.suggestOnlyReviewedRepos || reviewedRepos.has(repoKey(suggestion.host, suggestion.owner, suggestion.repo)));
   return {
-    enabled: settingsRepo.getSettings(ctx.db).suggestPrs,
+    enabled: settings.suggestPrs,
     suggestions: [...suggestions],
     lastCheckedAt: state.lastCheckedAt,
     checking: state.inflight !== null,

@@ -75,7 +75,7 @@ describe("refresh status and polling", () => {
   it("wraps GitHub failures in a readable 502", async () => {
     const { handle, repo, seeded } = setup();
     const failing = createTestContext({
-      github: { fetchPr: async () => Promise.reject(new Error("gh: not logged in")), remoteUrl: () => "", submitReview: refuseReviewSubmission, searchOpenPrs: async () => [] },
+      github: { fetchPr: async () => Promise.reject(new Error("gh: not logged in")), remoteUrl: () => "", submitReview: refuseReviewSubmission, searchOpenPrs: async () => [], fetchViewerReview: async () => null },
     });
     try {
       const copy = await seedReview(failing.ctx, repo, seeded.review.baseSha, seeded.review.headSha);
@@ -100,7 +100,7 @@ describe("refresh status and polling", () => {
     expect((await pollOnce(handle.ctx, fake.deps)).checked).toEqual([]);
 
     reviewsRepo.updateReview(handle.ctx.db, seeded.review.id, { status: "active" });
-    const broken = createTestContext({ github: { fetchPr: async () => Promise.reject(new Error("offline")), remoteUrl: () => "", submitReview: refuseReviewSubmission, searchOpenPrs: async () => [] } });
+    const broken = createTestContext({ github: { fetchPr: async () => Promise.reject(new Error("offline")), remoteUrl: () => "", submitReview: refuseReviewSubmission, searchOpenPrs: async () => [], fetchViewerReview: async () => null } });
     try {
       await seedReview(broken.ctx, repo, seeded.review.baseSha, seeded.review.headSha);
       const result = await pollOnce(broken.ctx, fake.deps);

@@ -126,7 +126,7 @@ export const seedFixtureReview = (ctx: AppContext): Review => {
   const now = nowIso();
   const reviewId = newId("rev");
   const roundId = newId("rnd");
-  const prNumber = 1000 + reviewsRepo.listReviews(ctx.db).length;
+  const prNumber = Math.max(999, ...reviewsRepo.listReviews(ctx.db).map((review) => review.prNumber)) + 1;
   const review: Review = {
     id: reviewId,
     host: "github.com",
@@ -146,6 +146,9 @@ export const seedFixtureReview = (ctx: AppContext): Review => {
     qaSessionId: null,
     remoteHeadSha: HEAD_SHA,
     remoteCheckedAt: now,
+    myReviewState: null,
+    myReviewSubmittedAt: null,
+    myReviewCommitSha: null,
     createdAt: now,
     lastActivityAt: now,
     finishedAt: null,

@@ -167,8 +167,13 @@ export const useRerunReview = (reviewId: string): UseMutationResult<OkResponse, 
   });
 };
 
-export const useSubmitGitHubReview = (reviewId: string): UseMutationResult<SubmitGitHubReviewResponse, Error, SubmitGitHubReviewRequest> =>
-  useMutation({ mutationFn: (request: SubmitGitHubReviewRequest) => api.submitGitHubReview(reviewId, request) });
+export const useSubmitGitHubReview = (reviewId: string): UseMutationResult<SubmitGitHubReviewResponse, Error, SubmitGitHubReviewRequest> => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (request: SubmitGitHubReviewRequest) => api.submitGitHubReview(reviewId, request),
+    onSuccess: () => invalidateReview(client, reviewId),
+  });
+};
 
 export interface ChunkProgressVariables extends UpdateChunkProgressRequest {
   readonly chunkId: string;

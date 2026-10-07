@@ -13,6 +13,7 @@ import { startRefreshPoller } from "./refresh/poller";
 import { startSuggestionPoller } from "./suggestions/poll";
 
 const WEB_DIST = join(import.meta.dirname, "..", "dist", "web");
+const LOOPBACK_ADDRESS = "127.0.0.1";
 
 const openBrowser = (url: string): void => {
   if (process.platform !== "darwin" || process.env.FOUR_EYES_NO_OPEN === "1") return;
@@ -36,7 +37,7 @@ const main = (): void => {
 
   const stopPoller = startRefreshPoller(ctx);
   const stopSuggestions = startSuggestionPoller(ctx);
-  const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
+  const server = serve({ fetch: app.fetch, port: config.port, hostname: LOOPBACK_ADDRESS }, (info) => {
     const url = `http://localhost:${info.port}`;
     console.log(`[four-eyes] server on ${url} (home ${config.home}${config.fakeClaude ? ", fake Claude" : ""})`);
     if (config.production) openBrowser(url);

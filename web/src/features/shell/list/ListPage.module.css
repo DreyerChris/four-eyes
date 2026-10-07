@@ -173,3 +173,30 @@
   align-items: center;
   gap: 1ch;
 }
+
+.myReviewApproved,
+.myReviewChanges,
+.myReviewCommented,
+.myReviewNone {
+  padding: 0 1ch;
+  border: 1px solid currentColor;
+  font-weight: 700;
+}
+
+.myReviewApproved {
+  color: var(--ok);
+}
+
+.myReviewChanges {
+  color: var(--danger);
+}
+
+.myReviewCommented {
+  color: var(--fg);
+}
+
+.myReviewNone {
+  border-style: dashed;
+  color: var(--fg-muted);
+  font-weight: 400;
+}

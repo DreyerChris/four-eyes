@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { AppContext } from "./context";
 import { handleError } from "./lib/http";
+import { localOnly } from "./lib/local-only";
 import { registerProgressRoutes } from "./routes/progress";
 import { registerQuestionRoutes } from "./routes/questions";
 import { registerRefreshRoutes } from "./routes/refresh";
@@ -14,6 +15,7 @@ import { registerTestFixtureRoutes } from "./routes/test-fixtures";
 export const createApp = (ctx: AppContext): Hono => {
   const app = new Hono();
   app.onError(handleError);
+  app.use("*", localOnly());
   app.get("/api/health", (c) => c.json({ ok: true as const, fakeClaude: ctx.config.fakeClaude }));
   registerReviewRoutes(app, ctx);
   registerProgressRoutes(app, ctx);

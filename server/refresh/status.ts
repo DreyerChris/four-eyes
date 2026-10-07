@@ -1,6 +1,7 @@
 import type { PrMeta, RefreshStatus, Review } from "@shared/domain";
 import type { AppContext } from "../context";
 import { reviewsRepo } from "../db/repositories";
+import { syncMyReview } from "../ingest/my-review";
 import { errorMessage, HttpError } from "../lib/errors";
 import { nowIso } from "../lib/time";
 import { defaultRefreshDeps, prRefOf, type RefreshDeps } from "./deps";
@@ -46,6 +47,7 @@ export const checkReviewWith = async (ctx: AppContext, reviewId: string, deps: R
     remoteCheckedAt: nowIso(),
     ghState: meta.state,
   });
+  await syncMyReview(ctx, reviewId);
   if (meta.state !== "open" && updated.status === "active") {
     await deps.moveReviewToPast(ctx, reviewId);
   }
@@ -53,7 +55,7 @@ export const checkReviewWith = async (ctx: AppContext, reviewId: string, deps: R
 };
 
 /**
- * Asks GitHub for the current head SHA and state now. Stores remote_head_sha, remote_checked_at and gh_state,
+ * Asks GitHub for the current head SHA and state now. Stores remote_head_sha, remote_checked_at, gh_state and your latest review,
  * moves the review to past when merged/closed, and publishes a "refresh_status" event.
  */
 export const checkReview = async (ctx: AppContext, reviewId: string): Promise<RefreshStatus> =>

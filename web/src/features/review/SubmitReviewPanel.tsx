@@ -4,7 +4,8 @@ import { GITHUB_REVIEW_EVENTS, type GitHubReviewEvent } from "@shared/domain";
 import { useSubmitGitHubReview } from "../../api/queries";
 import { flashStatus } from "../../bus/context";
 import { Panel } from "../../ui/Panel";
-import { GITHUB_REVIEW_EVENT_LABELS, GITHUB_REVIEW_SUBMIT_LABELS } from "./labels";
+import { formatRelative } from "../shell/list/format";
+import { GITHUB_REVIEW_EVENT_LABELS, GITHUB_REVIEW_SUBMIT_LABELS, hasCommitsSinceMyReview, MY_REVIEW_SENTENCES } from "./labels";
 import { buildFullReviewMarkdown } from "./markdown";
 import styles from "./review.module.css";
 
@@ -66,6 +67,12 @@ export const SubmitReviewPanel = ({ summary }: { readonly summary: SummaryRespon
           Posts to {prLabel} as your gh login, on commit <code>{review.headSha.slice(0, 7)}</code>, the commit you reviewed. A comment is
           optional when you approve and required otherwise. Markdown works.
         </p>
+        {review.myReviewState !== null && review.myReviewSubmittedAt !== null ? (
+          <p>
+            {MY_REVIEW_SENTENCES[review.myReviewState]} {formatRelative(review.myReviewSubmittedAt, Date.now())}
+            {hasCommitsSinceMyReview(review) ? ", and it has new commits since" : ""}.
+          </p>
+        ) : null}
         {review.hasNewCommits ? (
           <p className={styles.warning}>The PR has newer commits than this review. Your review will be attached to the older commit.</p>
         ) : null}

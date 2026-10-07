@@ -249,6 +249,19 @@ describe("SubmitReviewPanel", () => {
     expect((await within(region).findByRole("alert")).textContent).toContain("Can not approve your own pull request");
   });
 
+  it("says how you already reviewed the PR on GitHub and whether it changed since", async () => {
+    setup(
+      fixtureSummary({
+        review: fixtureReviewItem({
+          myReviewState: "approved",
+          myReviewSubmittedAt: new Date(Date.now() - 2 * 3_600_000).toISOString(),
+          myReviewCommitSha: "older",
+        }),
+      }),
+    );
+    expect((await panel()).textContent).toContain("You approved this PR on GitHub 2h ago, and it has new commits since.");
+  });
+
   it("explains why Past reviews and closed PRs cannot be submitted", async () => {
     setup(fixtureSummary({ review: fixtureReviewItem({ status: "past" }) }));
     expect((await panel()).textContent).toContain("This review is in Past");

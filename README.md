@@ -45,9 +45,11 @@ pnpm start
 
 Everything also works with the mouse.
 
+Each row in the active list shows your own latest GitHub review of the PR, such as **you approved 2h ago**, whether you submitted it from four-eyes or on GitHub. It adds **new commits since** when the PR changed after your review, and shows **not reviewed by you yet** otherwise. This is read during the regular PR check.
+
 ### Suggested PRs
 
-The **suggested** tab lists open PRs you might want to review: PRs in repos you reviewed in the last 30 days, and PRs by people whose PRs you reviewed before. four-eyes searches GitHub with your `gh` login when it starts and then every 15 minutes, and **Check now** searches straight away. Drafts and your own PRs are left out, and so are PRs already in four-eyes.
+The **suggested** tab lists open PRs you might want to review: PRs in repos you reviewed in the last 30 days, and PRs by people whose PRs you reviewed before. four-eyes searches GitHub with your `gh` login when it starts and then every 15 minutes, and **Check now** searches straight away. Drafts and your own PRs are left out, and so are PRs already in four-eyes. By default, only PRs in repos you have reviewed before are shown; see Settings.
 
 A suggestion never starts Claude on its own. Each row has:
 
@@ -72,6 +74,7 @@ Open settings with `,`.
 - **Claude executable.** Leave empty to use `claude` from your PATH. Set it if your Claude Code lives somewhere else or you start it through a wrapper. Accepts an absolute path, `~/...`, or a command name on your PATH. The panel shows which binary will be used and its version.
 - **Claude's output length.** How much Claude writes in chunk explanations, findings, the verdict and Q&A answers: `brief`, `standard` (the default) or `detailed`. It applies to reviews and questions run after you change it, including follow-up questions in an existing Q&A session.
 - **Suggestions.** Turn the suggested tab's GitHub searches on or off. Turning it on starts a search straight away.
+- **Only suggest PRs in repos you have reviewed before** (on by default). Leaves out PRs by people you've reviewed when they are in a repo you have never reviewed.
 - **Inline findings.** Show Claude's findings on each chunk while you step through, instead of only on the summary.
 
 The Claude binary is chosen in this order: the settings value, then `FOUR_EYES_CLAUDE_PATH`, then `claude` on PATH.
@@ -92,9 +95,9 @@ The Claude binary is chosen in this order: the settings value, then `FOUR_EYES_C
 ## Where your data goes
 
 - **Claude:** requests go through your own `claude` binary, so they go wherever your Claude Code is configured to send them. Claude only gets read-only tools (read, search, `git log` / `blame` / `show`) inside a checkout of the PR, and MCP servers are disabled.
-- **GitHub:** `gh` and `git` fetch PR details and code using your existing logins. four-eyes only reads; it never comments, reviews or pushes.
+- **GitHub:** `gh` and `git` fetch PR details, code, your own reviews and suggested PRs using your existing logins. The only thing four-eyes writes is a review you submit yourself from the summary page. It never pushes.
 - **Your disk:** reviews, notes and clones are stored in `FOUR_EYES_HOME`. Claude Code keeps its own session logs as it normally does.
-- **The browser** only talks to `localhost`.
+- **The server** listens on `127.0.0.1` only, so other machines on your network cannot reach it. It also refuses requests addressed to any other host name, and changes coming from another website's page, so a site open in your browser cannot use it either.
 
 ## Development
 

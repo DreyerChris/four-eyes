@@ -30,6 +30,7 @@ const searchingGitHub = (search: Search): GitHubClient => ({
   fetchPr: async () => Promise.reject(new Error("not used")),
   remoteUrl: () => "",
   submitReview: refuseReviewSubmission,
+  fetchViewerReview: async () => null,
   searchOpenPrs: async (_host, query) => {
     search.queries.push(query);
     if (search.failure) throw search.failure;
@@ -56,6 +57,7 @@ describe("PR suggestions", () => {
       hit({ number: 21, author: "zoe" }),
       hit({ owner: "other", repo: "lib", number: 3, author: "octocat", url: "https://github.com/other/lib/pull/3" }),
     ]);
+    settingsRepo.updateSettings(ctx.db, { suggestOnlyReviewedRepos: false });
 
     await pollSuggestions(ctx);
 
@@ -73,6 +75,18 @@ describe("PR suggestions", () => {
     ]);
     expect(reviewsRepo.listReviews(ctx.db)).toHaveLength(1);
     expect(claudeRunsRepo.listRuns(ctx.db, reviewsRepo.listReviews(ctx.db)[0]?.id ?? "")).toEqual([]);
+  });
+
+  it("by default leaves out a reviewed author's PRs in repos you have never reviewed, and shows them when the setting is off", async () => {
+    const { ctx } = setup([
+      hit({ number: 20, author: "octocat" }),
+      hit({ owner: "other", repo: "lib", number: 3, author: "octocat", url: "https://github.com/other/lib/pull/3" }),
+    ]);
+    await pollSuggestions(ctx);
+    expect(visible(ctx)).toEqual(["github.com/acme/widgets#20"]);
+
+    settingsRepo.updateSettings(ctx.db, { suggestOnlyReviewedRepos: false });
+    expect(visible(ctx)).toEqual(["github.com/acme/widgets#20", "github.com/other/lib#3"]);
   });
 
   it("leaves out PRs that are already in four-eyes", async () => {

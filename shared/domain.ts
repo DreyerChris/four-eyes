@@ -16,6 +16,7 @@ export const DIFF_LAYOUTS = ["unified", "split"] as const;
 export const THEMES = ["dark", "light"] as const;
 export const VERBOSITIES = ["brief", "standard", "detailed"] as const;
 export const GITHUB_REVIEW_EVENTS = ["approve", "comment", "request_changes"] as const;
+export const MY_REVIEW_STATES = ["approved", "changes_requested", "commented", "dismissed"] as const;
 export const DIFF_SIDES = ["old", "new"] as const;
 
 export const ReviewStatusSchema = z.enum(REVIEW_STATUSES);
@@ -34,6 +35,7 @@ export const DiffLayoutSchema = z.enum(DIFF_LAYOUTS);
 export const ThemeSchema = z.enum(THEMES);
 export const VerbositySchema = z.enum(VERBOSITIES);
 export const GitHubReviewEventSchema = z.enum(GITHUB_REVIEW_EVENTS);
+export const MyReviewStateSchema = z.enum(MY_REVIEW_STATES);
 export const DiffSideSchema = z.enum(DIFF_SIDES);
 
 export type ReviewStatus = z.infer<typeof ReviewStatusSchema>;
@@ -52,6 +54,7 @@ export type DiffLayout = z.infer<typeof DiffLayoutSchema>;
 export type Theme = z.infer<typeof ThemeSchema>;
 export type Verbosity = z.infer<typeof VerbositySchema>;
 export type GitHubReviewEvent = z.infer<typeof GitHubReviewEventSchema>;
+export type MyReviewState = z.infer<typeof MyReviewStateSchema>;
 export type DiffSide = z.infer<typeof DiffSideSchema>;
 
 export const IsoDateSchema = z.string();
@@ -95,6 +98,9 @@ export const ReviewSchema = z.object({
   qaSessionId: z.string().nullable(),
   remoteHeadSha: z.string().nullable(),
   remoteCheckedAt: IsoDateSchema.nullable(),
+  myReviewState: MyReviewStateSchema.nullable(),
+  myReviewSubmittedAt: IsoDateSchema.nullable(),
+  myReviewCommitSha: z.string().nullable(),
   createdAt: IsoDateSchema,
   lastActivityAt: IsoDateSchema,
   finishedAt: IsoDateSchema.nullable(),
@@ -236,6 +242,7 @@ export const SettingsSchema = z.object({
   theme: ThemeSchema,
   verbosity: VerbositySchema,
   suggestPrs: z.boolean(),
+  suggestOnlyReviewedRepos: z.boolean(),
   diffLayout: DiffLayoutSchema,
   hideWhitespace: z.boolean(),
   claudePath: z.string().trim().min(1).nullable(),
@@ -287,6 +294,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: "dark",
   verbosity: "standard",
   suggestPrs: true,
+  suggestOnlyReviewedRepos: true,
   diffLayout: "unified",
   hideWhitespace: false,
   claudePath: null,

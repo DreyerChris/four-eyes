@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { routes } from "../../shared/api";
 import { FIXTURE_PR_URL, expectNoA11yViolations, ingestFixturePr, removeFixturePr, seedReview } from "../fixtures";
 
 const seededTitle = async (page: Page, reviewId: string): Promise<string> => {
@@ -261,6 +262,10 @@ test.describe("keyboard only", () => {
 });
 
 test.describe("suggestions", () => {
+  test.afterEach(async ({ request }) => {
+    expect((await request.patch(routes.updateSettings.path, { data: { suggestOnlyReviewedRepos: true } })).ok()).toBe(true);
+  });
+
   test("suggests the fixture PR, hides it for good with not interested until added, and adds it with Review this", async ({ page, request }) => {
     await seedReview(request);
     await removeFixturePr(request);
@@ -269,6 +274,11 @@ test.describe("suggestions", () => {
     const row = suggested.getByRole("listitem").filter({ hasText: "Add email to users and send a welcome mail" });
 
     await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.getByText(/^Checked /)).toBeVisible();
+    await expect(row).toBeHidden();
+
+    expect((await request.patch(routes.updateSettings.path, { data: { suggestOnlyReviewedRepos: false } })).ok()).toBe(true);
+    await page.reload();
     await expect(row).toBeVisible();
     await expect(row.getByText("@octocat's PRs you reviewed before")).toBeVisible();
     await expect(page.getByRole("link", { name: /^suggested \(\d+\)$/ })).toBeVisible();

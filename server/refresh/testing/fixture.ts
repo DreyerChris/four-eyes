@@ -27,6 +27,7 @@ export const createFakeGitHub = (initial: PrMeta): FakeGitHub => {
     remoteUrl: () => "file:///dev/null",
     submitReview: refuseReviewSubmission,
     searchOpenPrs: async () => [],
+    fetchViewerReview: async () => null,
     setPr: (patch) => {
       state.meta = { ...state.meta, ...patch };
     },
@@ -74,6 +75,9 @@ export const seedReview = async (ctx: AppContext, repo: TempRepo, baseSha: strin
     qaSessionId: null,
     remoteHeadSha: headSha,
     remoteCheckedAt: now,
+    myReviewState: null,
+    myReviewSubmittedAt: null,
+    myReviewCommitSha: null,
     createdAt: now,
     lastActivityAt: now,
     finishedAt: null,

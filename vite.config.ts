@@ -15,7 +15,7 @@ export default defineConfig({
     port: webPort,
     strictPort: true,
     proxy: {
-      "/api": { target: `http://localhost:${apiPort}`, changeOrigin: true },
+      "/api": { target: `http://127.0.0.1:${apiPort}`, changeOrigin: true },
     },
   },
   build: {

@@ -5,6 +5,7 @@ import { runReview } from "../claude/review";
 import type { AppContext } from "../context";
 import { hunksRepo, reviewsRepo, roundsRepo, suggestionsRepo } from "../db/repositories";
 import { suggestionId } from "../suggestions/signals";
+import { syncMyReview } from "./my-review";
 import { errorMessage } from "../lib/errors";
 import { newId } from "../lib/ids";
 import { nowIso } from "../lib/time";
@@ -98,6 +99,7 @@ const ingest = async (ctx: AppContext, reviewId: string): Promise<void> => {
     remoteCheckedAt: checkedAt,
     lastActivityAt: checkedAt,
   });
+  await syncMyReview(ctx, reviewId);
 
   const bare = await runStep(ctx, reviewId, "clone", async () => {
     const path = await ensureBareClone(ctx, ref);
@@ -196,6 +198,9 @@ const placeholderReview = (ref: PrRef): Review => {
     qaSessionId: null,
     remoteHeadSha: null,
     remoteCheckedAt: null,
+    myReviewState: null,
+    myReviewSubmittedAt: null,
+    myReviewCommitSha: null,
     createdAt: now,
     lastActivityAt: now,
     finishedAt: null,

@@ -5,6 +5,7 @@ import { navigate, paths, type ListTab } from "../../../app/router";
 import { flashStatus } from "../../../bus/context";
 import { useKeyBinding } from "../../../keys/hooks";
 import { Panel } from "../../../ui/Panel";
+import { hasCommitsSinceMyReview, MY_REVIEW_LABELS } from "../../review/labels";
 import { formatRelative, progressBar } from "./format";
 import { IngestProgress } from "./IngestProgress";
 import { SuggestionsPanel } from "./SuggestionsPanel";
@@ -109,6 +110,28 @@ interface RowProps {
   readonly onDeleted: () => void;
 }
 
+const MY_REVIEW_CLASS = {
+  approved: styles.myReviewApproved,
+  changes_requested: styles.myReviewChanges,
+  commented: styles.myReviewCommented,
+  dismissed: styles.myReviewCommented,
+} as const;
+
+const MyReviewTag = ({ review, now }: { readonly review: ReviewListItem; readonly now: number }): ReactElement => {
+  if (review.myReviewState === null || review.myReviewSubmittedAt === null) {
+    return <span className={styles.myReviewNone}>not reviewed by you yet</span>;
+  }
+  return (
+    <span className={MY_REVIEW_CLASS[review.myReviewState]}>
+      {MY_REVIEW_LABELS[review.myReviewState]}{" "}
+      <time dateTime={review.myReviewSubmittedAt} title={review.myReviewSubmittedAt}>
+        {formatRelative(review.myReviewSubmittedAt, now)}
+      </time>
+      {hasCommitsSinceMyReview(review) ? ", new commits since" : ""}
+    </span>
+  );
+};
+
 const ReviewRow = ({ review, index, now, confirming, onSelect, onAskDelete, onDeleted }: RowProps): ReactElement => {
   const remove = useDeleteReview();
   const reviewed = review.progress.totalChunks - review.progress.unseen;
@@ -141,6 +164,7 @@ const ReviewRow = ({ review, index, now, confirming, onSelect, onAskDelete, onDe
           {name}
         </a>
         <div className={styles.meta}>
+          <MyReviewTag review={review} now={now} />
           <span>
             {review.owner}/{review.repo}#{review.prNumber}
           </span>

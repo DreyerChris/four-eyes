@@ -27,6 +27,7 @@ describe("submitGitHubReview route", () => {
           return { url: `https://github.com/${ref.owner}/${ref.repo}/pull/${ref.number}#pullrequestreview-1` };
         },
         searchOpenPrs: async () => [],
+        fetchViewerReview: async () => null,
       },
     });
     app = createApp(handle.ctx);
@@ -60,6 +61,7 @@ describe("submitGitHubReview route", () => {
         submission: { event: "approve", body: null, commitId: review.headSha },
       },
     ]);
+    expect(reviewsRepo.requireReview(handle.ctx.db, reviewId)).toMatchObject({ myReviewState: "approved", myReviewCommitSha: review.headSha });
   });
 
   it("sends a trimmed comment with a change request", async () => {

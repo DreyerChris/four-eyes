@@ -67,6 +67,7 @@ const SettingsForm = ({ settings }: { readonly settings: Settings }): ReactEleme
   const [models, setModels] = useState<ModelSettings>(settings.models);
   const [inlineFindings, setInlineFindings] = useState(settings.inlineFindings);
   const [suggestPrs, setSuggestPrs] = useState(settings.suggestPrs);
+  const [suggestOnlyReviewedRepos, setSuggestOnlyReviewedRepos] = useState(settings.suggestOnlyReviewedRepos);
   const [theme, setTheme] = useState<Theme>(settings.theme);
   const [verbosity, setVerbosity] = useState<Verbosity>(settings.verbosity);
   const [claudePath, setClaudePath] = useState(settings.claudePath ?? "");
@@ -82,7 +83,7 @@ const SettingsForm = ({ settings }: { readonly settings: Settings }): ReactEleme
       qaOpus: models.qaOpus.trim(),
     };
     update.mutate(
-      { models: trimmed, inlineFindings, suggestPrs, theme, verbosity, claudePath: claudePath.trim() === "" ? null : claudePath.trim() },
+      { models: trimmed, inlineFindings, suggestPrs, suggestOnlyReviewedRepos, theme, verbosity, claudePath: claudePath.trim() === "" ? null : claudePath.trim() },
       {
         onSuccess: () => {
           flashStatus("Settings saved");
@@ -171,6 +172,16 @@ const SettingsForm = ({ settings }: { readonly settings: Settings }): ReactEleme
           <label htmlFor={`${baseId}-suggest`}>
             Suggest open PRs from repos you reviewed recently and people you reviewed before (checks GitHub every 15 minutes)
           </label>
+        </div>
+        <div className={styles.check}>
+          <input
+            id={`${baseId}-reviewed-repos`}
+            type="checkbox"
+            checked={suggestOnlyReviewedRepos}
+            disabled={!suggestPrs}
+            onChange={(event) => setSuggestOnlyReviewedRepos(event.target.checked)}
+          />
+          <label htmlFor={`${baseId}-reviewed-repos`}>Only suggest PRs in repos you have reviewed before</label>
         </div>
       </fieldset>
       <fieldset className={styles.fieldset}>

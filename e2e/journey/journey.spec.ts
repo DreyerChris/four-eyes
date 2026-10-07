@@ -363,10 +363,14 @@ test("submits an approval without a comment and a change request with one to Git
   await panel.getByRole("button", { name: "Request changes on GitHub" }).click();
   await expect(panel.getByRole("link", { name: "View it on GitHub" })).toHaveAttribute("href", `${FIXTURE_PR_URL}#pullrequestreview-${before + 2}`);
 
-  expect(submittedReviews().slice(before)).toEqual([
+  expect(submittedReviews().slice(before)).toMatchObject([
     { event: "approve", body: null, commitId: prHead() },
     { event: "request_changes", body: "Send the welcome mail after saving.", commitId: prHead() },
   ]);
+
+  await page.goto("/");
+  const listRow = page.getByRole("listitem").filter({ has: page.getByRole("link", { name: TITLE }) });
+  await expect(listRow.getByText(/^you requested changes/)).toBeVisible();
 });
 
 test("runs Claude's review again from the summary and logs a second review run", async ({ page, request }) => {

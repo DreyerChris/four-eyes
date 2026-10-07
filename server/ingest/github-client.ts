@@ -3,7 +3,7 @@ import { appendFile, copyFile, mkdir, readFile, readdir, rename, rm } from "node
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { GhStateSchema, type GhState, type GitHubReviewEvent, type PrMeta, type PrRef } from "@shared/domain";
+import { GhStateSchema, type GhState, type GitHubReviewEvent, type MyReviewState, type PrMeta, type PrRef } from "@shared/domain";
 import type { AppConfig } from "../config";
 import { HttpError, errorMessage } from "../lib/errors";
 import { CommandError, runCommand, runCommandRaw } from "./exec";
@@ -29,11 +29,18 @@ export interface PrSearchHit {
   readonly updatedAt: string;
 }
 
+export interface ViewerReview {
+  readonly state: MyReviewState;
+  readonly submittedAt: string;
+  readonly commitSha: string | null;
+}
+
 export interface GitHubClient {
   readonly fetchPr: (ref: PrRef) => Promise<PrMeta>;
   readonly remoteUrl: (ref: PrRef) => string;
   readonly submitReview: (ref: PrRef, submission: GitHubReviewSubmission) => Promise<SubmittedGitHubReview>;
   readonly searchOpenPrs: (host: string, query: string) => Promise<readonly PrSearchHit[]>;
+  readonly fetchViewerReview: (ref: PrRef) => Promise<ViewerReview | null>;
 }
 
 const GH_ENV: NodeJS.ProcessEnv = { ...process.env, GH_PROMPT_DISABLED: "1", NO_COLOR: "1", GH_NO_UPDATE_NOTIFIER: "1" };
@@ -181,11 +188,12 @@ const GhSearchSchema = z.object({
       user: z.object({ login: z.string() }).nullable(),
       updated_at: z.string(),
       repository_url: z.string(),
+      draft: z.boolean().optional(),
     }),
   ),
 });
 
-/** Maps `gh api search/issues` output to search hits. Throws a readable error when the JSON has an unexpected shape. */
+/** Maps `gh api search/issues` output to search hits, leaving out draft PRs. Throws a readable error when the JSON has an unexpected shape. */
 export const parseGhSearchJson = (raw: string): readonly PrSearchHit[] => {
   const json = ((): unknown => {
     try {
@@ -197,6 +205,7 @@ export const parseGhSearchJson = (raw: string): readonly PrSearchHit[] => {
   const parsed = GhSearchSchema.safeParse(json);
   if (!parsed.success) throw new Error(`GitHub search returned unexpected JSON: ${parsed.error.message}`);
   return parsed.data.items.flatMap((item) => {
+    if (item.draft === true) return [];
     const repo = /\/repos\/([^/]+)\/([^/]+)$/.exec(item.repository_url);
     if (repo?.[1] === undefined || repo[2] === undefined) return [];
     return [
@@ -213,12 +222,71 @@ export const parseGhSearchJson = (raw: string): readonly PrSearchHit[] => {
   });
 };
 
-const ghSearchError = (host: string, output: { readonly stdout: string; readonly stderr: string }): HttpError => {
+const ghApiFailure = (host: string, what: string, output: { readonly stdout: string; readonly stderr: string }): HttpError => {
   if (/auth login|not logged in|authentication|HTTP 401/i.test(output.stderr)) {
     return new HttpError(502, `gh is not logged in to ${host}. Run: gh auth login --hostname ${host}`);
   }
   const detail = githubApiErrorDetail(output.stdout) ?? output.stderr.trim().split("\n").slice(-3).join(" ");
-  return new HttpError(502, `GitHub search on ${host} failed: ${detail}`);
+  return new HttpError(502, `${what} on ${host} failed: ${detail}`);
+};
+
+const VIEWER_REVIEW_QUERY =
+  "query($owner: String!, $repo: String!, $number: Int!) { repository(owner: $owner, name: $repo) { pullRequest(number: $number) { viewerLatestReview { state submittedAt commit { oid } } } } }";
+
+/** `gh api graphql` arguments asking for the logged-in user's latest review on the PR. */
+export const ghViewerReviewArgs = (ref: PrRef): readonly string[] => [
+  "api",
+  "graphql",
+  "--hostname",
+  ref.host,
+  "-f",
+  `query=${VIEWER_REVIEW_QUERY}`,
+  "-f",
+  `owner=${ref.owner}`,
+  "-f",
+  `repo=${ref.repo}`,
+  "-F",
+  `number=${ref.number}`,
+];
+
+const API_REVIEW_STATES: Readonly<Record<string, MyReviewState>> = {
+  APPROVED: "approved",
+  CHANGES_REQUESTED: "changes_requested",
+  COMMENTED: "commented",
+  DISMISSED: "dismissed",
+};
+
+const GhViewerReviewSchema = z.object({
+  data: z.object({
+    repository: z
+      .object({
+        pullRequest: z
+          .object({
+            viewerLatestReview: z
+              .object({ state: z.string(), submittedAt: z.string().nullable(), commit: z.object({ oid: z.string() }).nullable() })
+              .nullable(),
+          })
+          .nullable(),
+      })
+      .nullable(),
+  }),
+});
+
+/** Maps the viewer review query's output to the user's latest submitted review. Pending reviews count as none. */
+export const parseViewerReviewJson = (raw: string): ViewerReview | null => {
+  const json = ((): unknown => {
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      throw new Error(`GitHub returned invalid JSON for your review: ${errorMessage(error)}`);
+    }
+  })();
+  const parsed = GhViewerReviewSchema.safeParse(json);
+  if (!parsed.success) throw new Error(`GitHub returned unexpected JSON for your review: ${parsed.error.message}`);
+  const latest = parsed.data.data.repository?.pullRequest?.viewerLatestReview ?? null;
+  const state = latest === null ? undefined : API_REVIEW_STATES[latest.state];
+  if (latest === null || state === undefined || latest.submittedAt === null) return null;
+  return { state, submittedAt: new Date(latest.submittedAt).toISOString(), commitSha: latest.commit?.oid ?? null };
 };
 
 const submittedReviewUrl = (ref: PrRef, stdout: string): string => {
@@ -252,8 +320,15 @@ export const createGhCliClient = (): GitHubClient => ({
     const output = await runCommandRaw("gh", ghSearchArgs(host, query), { env: GH_ENV, timeoutMs: 60_000 }).catch((error: unknown) => {
       throw new HttpError(502, `Could not run gh to search ${host}: ${errorMessage(error)}`);
     });
-    if (output.exitCode !== 0) throw ghSearchError(host, output);
+    if (output.exitCode !== 0) throw ghApiFailure(host, "GitHub search", output);
     return parseGhSearchJson(output.stdout);
+  },
+  fetchViewerReview: async (ref: PrRef): Promise<ViewerReview | null> => {
+    const output = await runCommandRaw("gh", ghViewerReviewArgs(ref), { env: GH_ENV, timeoutMs: 60_000 }).catch((error: unknown) => {
+      throw new HttpError(502, `Could not run gh to read your review: ${errorMessage(error)}`);
+    });
+    if (output.exitCode !== 0) throw ghApiFailure(ref.host, `Reading your review of ${ref.owner}/${ref.repo}#${ref.number}`, output);
+    return parseViewerReviewJson(output.stdout);
   },
 });
 
@@ -351,6 +426,30 @@ const readFakeState = async (repoDir: string): Promise<GhState> => {
   return parsed.data;
 };
 
+const FakeReviewLogEntrySchema = z.object({
+  event: z.enum(["approve", "comment", "request_changes"]),
+  body: z.string().nullable(),
+  commitId: z.string(),
+  submittedAt: z.string(),
+});
+
+const FAKE_REVIEW_STATES: Readonly<Record<GitHubReviewEvent, MyReviewState>> = {
+  approve: "approved",
+  comment: "commented",
+  request_changes: "changes_requested",
+};
+
+const readFakeReviewLog = async (file: string): Promise<readonly z.infer<typeof FakeReviewLogEntrySchema>[]> => {
+  const text = await readFile(file, "utf8").catch((error: unknown) => {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return "";
+    throw new Error(`Could not read the fake review log at ${file}: ${errorMessage(error)}`, { cause: error });
+  });
+  return text
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .map((line) => FakeReviewLogEntrySchema.parse(JSON.parse(line)));
+};
+
 const revParse = async (repoDir: string, rev: string): Promise<string | null> => {
   const output = await runCommandRaw("git", ["rev-parse", "--verify", "--quiet", `${rev}^{commit}`], { cwd: repoDir, env: FAKE_GIT_ENV });
   return output.exitCode === 0 ? output.stdout.trim() : null;
@@ -407,15 +506,16 @@ export const createFakeGitHubClient = (config: AppConfig): GitHubClient => {
       requireFake(ref);
       await ensureRepo();
       const file = join(repoDir, ".git", FAKE_REVIEWS_FILE);
-      const count = await readFile(file, "utf8").then(
-        (text) => text.split("\n").filter((line) => line.trim() !== "").length,
-        (error: unknown) => {
-          if (error instanceof Error && "code" in error && error.code === "ENOENT") return 0;
-          throw new Error(`Could not read the fake review log at ${file}: ${errorMessage(error)}`, { cause: error });
-        },
-      );
-      await appendFile(file, `${JSON.stringify(submission)}\n`);
+      const count = (await readFakeReviewLog(file)).length;
+      await appendFile(file, `${JSON.stringify({ ...submission, submittedAt: new Date().toISOString() })}\n`);
       return { url: `${FAKE_PR_URL}#pullrequestreview-${count + 1}` };
+    },
+    fetchViewerReview: async (ref: PrRef): Promise<ViewerReview | null> => {
+      requireFake(ref);
+      await ensureRepo();
+      const latest = (await readFakeReviewLog(join(repoDir, ".git", FAKE_REVIEWS_FILE))).at(-1);
+      if (latest === undefined) return null;
+      return { state: FAKE_REVIEW_STATES[latest.event], submittedAt: latest.submittedAt, commitSha: latest.commitId };
     },
     searchOpenPrs: async (host: string, query: string): Promise<readonly PrSearchHit[]> => {
       const terms = query.split(/\s+/);
