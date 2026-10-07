@@ -235,11 +235,31 @@ export const SettingsSchema = z.object({
   inlineFindings: z.boolean(),
   theme: ThemeSchema,
   verbosity: VerbositySchema,
+  suggestPrs: z.boolean(),
   diffLayout: DiffLayoutSchema,
   hideWhitespace: z.boolean(),
   claudePath: z.string().trim().min(1).nullable(),
 });
 export type Settings = z.infer<typeof SettingsSchema>;
+
+export const PrSuggestionSchema = z.object({
+  id: z.string(),
+  host: z.string(),
+  owner: z.string(),
+  repo: z.string(),
+  number: z.number().int(),
+  title: z.string(),
+  author: z.string(),
+  url: z.string(),
+  updatedAt: IsoDateSchema,
+  recentRepo: z.boolean(),
+  knownAuthor: z.boolean(),
+  firstSeenAt: IsoDateSchema,
+  lastSeenAt: IsoDateSchema,
+  dismissedAt: IsoDateSchema.nullable(),
+  ignoredAt: IsoDateSchema.nullable(),
+});
+export type PrSuggestion = z.infer<typeof PrSuggestionSchema>;
 
 export const ClaudeExecutableSourceSchema = z.enum(["settings", "env", "path"]);
 export type ClaudeExecutableSource = z.infer<typeof ClaudeExecutableSourceSchema>;
@@ -266,6 +286,7 @@ export const DEFAULT_SETTINGS: Settings = {
   inlineFindings: false,
   theme: "dark",
   verbosity: "standard",
+  suggestPrs: true,
   diffLayout: "unified",
   hideWhitespace: false,
   claudePath: null,

@@ -10,6 +10,7 @@ import { claudeRunsRepo } from "./db/repositories";
 import { errorMessage } from "./lib/errors";
 import { nowIso } from "./lib/time";
 import { startRefreshPoller } from "./refresh/poller";
+import { startSuggestionPoller } from "./suggestions/poll";
 
 const WEB_DIST = join(import.meta.dirname, "..", "dist", "web");
 
@@ -34,6 +35,7 @@ const main = (): void => {
   }
 
   const stopPoller = startRefreshPoller(ctx);
+  const stopSuggestions = startSuggestionPoller(ctx);
   const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
     const url = `http://localhost:${info.port}`;
     console.log(`[four-eyes] server on ${url} (home ${config.home}${config.fakeClaude ? ", fake Claude" : ""})`);
@@ -42,6 +44,7 @@ const main = (): void => {
 
   const shutdown = (): void => {
     stopPoller();
+    stopSuggestions();
     server.close(() => {
       close();
       process.exit(0);

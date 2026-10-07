@@ -152,3 +152,24 @@
 .stepMessage {
   color: var(--fg-muted);
 }
+
+.suggestionTitle {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.suggestionsStatus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1ch;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.suggestionActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1ch;
+}

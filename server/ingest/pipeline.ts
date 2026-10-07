@@ -3,7 +3,8 @@ import type { Hunk, PipelineStep, PrRef, Review } from "@shared/domain";
 import { runChunking } from "../claude/chunking";
 import { runReview } from "../claude/review";
 import type { AppContext } from "../context";
-import { hunksRepo, reviewsRepo, roundsRepo } from "../db/repositories";
+import { hunksRepo, reviewsRepo, roundsRepo, suggestionsRepo } from "../db/repositories";
+import { suggestionId } from "../suggestions/signals";
 import { errorMessage } from "../lib/errors";
 import { newId } from "../lib/ids";
 import { nowIso } from "../lib/time";
@@ -232,6 +233,7 @@ const reopen = (ctx: AppContext, existing: Review): StartIngestResult => {
  */
 export const startIngest = async (ctx: AppContext, request: CreateReviewRequest): Promise<StartIngestResult> => {
   const ref = parsePrUrl(request.url);
+  suggestionsRepo.forget(ctx.db, suggestionId(ref.host, ref));
   const existing = reviewsRepo.findReviewByPr(ctx.db, ref);
   if (existing !== undefined) return reopen(ctx, existing);
   const review = reviewsRepo.insertReview(ctx.db, placeholderReview(ref));

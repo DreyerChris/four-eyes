@@ -19,10 +19,21 @@ export interface SubmittedGitHubReview {
   readonly url: string;
 }
 
+export interface PrSearchHit {
+  readonly owner: string;
+  readonly repo: string;
+  readonly number: number;
+  readonly title: string;
+  readonly author: string;
+  readonly url: string;
+  readonly updatedAt: string;
+}
+
 export interface GitHubClient {
   readonly fetchPr: (ref: PrRef) => Promise<PrMeta>;
   readonly remoteUrl: (ref: PrRef) => string;
   readonly submitReview: (ref: PrRef, submission: GitHubReviewSubmission) => Promise<SubmittedGitHubReview>;
+  readonly searchOpenPrs: (host: string, query: string) => Promise<readonly PrSearchHit[]>;
 }
 
 const GH_ENV: NodeJS.ProcessEnv = { ...process.env, GH_PROMPT_DISABLED: "1", NO_COLOR: "1", GH_NO_UPDATE_NOTIFIER: "1" };
@@ -140,6 +151,76 @@ const ghReviewError = (ref: PrRef, output: { readonly stdout: string; readonly s
 
 const SubmittedReviewSchema = z.object({ html_url: z.string() });
 
+/** Results asked for per search; GitHub's maximum page size. */
+const SEARCH_PAGE_SIZE = 100;
+
+/** `gh api` arguments for one page of issue search results, most recently updated first. */
+export const ghSearchArgs = (host: string, query: string): readonly string[] => [
+  "api",
+  "--hostname",
+  host,
+  "--method",
+  "GET",
+  "search/issues",
+  "-f",
+  `q=${query}`,
+  "-f",
+  `per_page=${SEARCH_PAGE_SIZE}`,
+  "-f",
+  "sort=updated",
+  "-f",
+  "order=desc",
+];
+
+const GhSearchSchema = z.object({
+  items: z.array(
+    z.object({
+      html_url: z.string(),
+      number: z.number().int(),
+      title: z.string(),
+      user: z.object({ login: z.string() }).nullable(),
+      updated_at: z.string(),
+      repository_url: z.string(),
+    }),
+  ),
+});
+
+/** Maps `gh api search/issues` output to search hits. Throws a readable error when the JSON has an unexpected shape. */
+export const parseGhSearchJson = (raw: string): readonly PrSearchHit[] => {
+  const json = ((): unknown => {
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      throw new Error(`GitHub search returned invalid JSON: ${errorMessage(error)}`);
+    }
+  })();
+  const parsed = GhSearchSchema.safeParse(json);
+  if (!parsed.success) throw new Error(`GitHub search returned unexpected JSON: ${parsed.error.message}`);
+  return parsed.data.items.flatMap((item) => {
+    const repo = /\/repos\/([^/]+)\/([^/]+)$/.exec(item.repository_url);
+    if (repo?.[1] === undefined || repo[2] === undefined) return [];
+    return [
+      {
+        owner: repo[1],
+        repo: repo[2],
+        number: item.number,
+        title: item.title,
+        author: item.user?.login ?? "ghost",
+        url: item.html_url,
+        updatedAt: item.updated_at,
+      },
+    ];
+  });
+};
+
+const ghSearchError = (host: string, output: { readonly stdout: string; readonly stderr: string }): HttpError => {
+  if (/auth login|not logged in|authentication|HTTP 401/i.test(output.stderr)) {
+    return new HttpError(502, `gh is not logged in to ${host}. Run: gh auth login --hostname ${host}`);
+  }
+  const detail = githubApiErrorDetail(output.stdout) ?? output.stderr.trim().split("\n").slice(-3).join(" ");
+  return new HttpError(502, `GitHub search on ${host} failed: ${detail}`);
+};
+
 const submittedReviewUrl = (ref: PrRef, stdout: string): string => {
   try {
     const parsed = SubmittedReviewSchema.safeParse(JSON.parse(stdout));
@@ -167,11 +248,20 @@ export const createGhCliClient = (): GitHubClient => ({
     if (output.exitCode !== 0) throw ghReviewError(ref, output);
     return { url: submittedReviewUrl(ref, output.stdout) };
   },
+  searchOpenPrs: async (host: string, query: string): Promise<readonly PrSearchHit[]> => {
+    const output = await runCommandRaw("gh", ghSearchArgs(host, query), { env: GH_ENV, timeoutMs: 60_000 }).catch((error: unknown) => {
+      throw new HttpError(502, `Could not run gh to search ${host}: ${errorMessage(error)}`);
+    });
+    if (output.exitCode !== 0) throw ghSearchError(host, output);
+    return parseGhSearchJson(output.stdout);
+  },
 });
 
 export const FAKE_PR_URL = "https://github.com/four-eyes-fixture/demo/pull/1";
 
 const FAKE_REF: PrRef = { host: "github.com", owner: "four-eyes-fixture", repo: "demo", number: 1 };
+const FAKE_PR_TITLE = "Add email to users and send a welcome mail";
+const FAKE_PR_AUTHOR = "octocat";
 const FAKE_BASE_BRANCH = "main";
 const FAKE_HEAD_BRANCH = "feature/welcome-email";
 const FIXTURE_DIR = fileURLToPath(new URL("./fixtures/demo", import.meta.url));
@@ -299,8 +389,8 @@ export const createFakeGitHubClient = (config: AppConfig): GitHubClient => {
       ]);
       if (headSha === null || baseSha === null) throw new Error(`Fake GitHub repo at ${repoDir} is missing its PR refs`);
       return {
-        title: "Add email to users and send a welcome mail",
-        author: "octocat",
+        title: FAKE_PR_TITLE,
+        author: FAKE_PR_AUTHOR,
         url: FAKE_PR_URL,
         state,
         headSha,
@@ -326,6 +416,24 @@ export const createFakeGitHubClient = (config: AppConfig): GitHubClient => {
       );
       await appendFile(file, `${JSON.stringify(submission)}\n`);
       return { url: `${FAKE_PR_URL}#pullrequestreview-${count + 1}` };
+    },
+    searchOpenPrs: async (host: string, query: string): Promise<readonly PrSearchHit[]> => {
+      const terms = query.split(/\s+/);
+      const matches =
+        host === FAKE_REF.host &&
+        (terms.includes(`repo:${FAKE_REF.owner}/${FAKE_REF.repo}`) || terms.includes(`author:${FAKE_PR_AUTHOR}`));
+      if (!matches) return [];
+      return [
+        {
+          owner: FAKE_REF.owner,
+          repo: FAKE_REF.repo,
+          number: FAKE_REF.number,
+          title: FAKE_PR_TITLE,
+          author: FAKE_PR_AUTHOR,
+          url: FAKE_PR_URL,
+          updatedAt: "2026-01-02T10:00:00Z",
+        },
+      ];
     },
   };
 };

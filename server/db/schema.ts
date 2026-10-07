@@ -220,3 +220,25 @@ export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
 });
+
+export const prSuggestions = sqliteTable(
+  "pr_suggestions",
+  {
+    id: text("id").primaryKey(),
+    host: text("host").notNull(),
+    owner: text("owner").notNull(),
+    repo: text("repo").notNull(),
+    number: integer("number").notNull(),
+    title: text("title").notNull(),
+    author: text("author").notNull(),
+    url: text("url").notNull(),
+    updatedAt: text("updated_at").notNull(),
+    recentRepo: integer("recent_repo", { mode: "boolean" }).notNull(),
+    knownAuthor: integer("known_author", { mode: "boolean" }).notNull(),
+    firstSeenAt: text("first_seen_at").notNull(),
+    lastSeenAt: text("last_seen_at").notNull(),
+    dismissedAt: text("dismissed_at"),
+    ignoredAt: text("ignored_at"),
+  },
+  (t) => [index("pr_suggestions_host_idx").on(t.host)],
+);

@@ -20,7 +20,7 @@ const scopeFor = (route: Route): "list" | "review" | "summary" =>
 const crumbFor = (route: Route): string => {
   switch (route.name) {
     case "list":
-      return route.tab === "past" ? "reviews / past" : "reviews / active";
+      return `reviews / ${route.tab}`;
     case "review":
       return "review";
     case "summary":

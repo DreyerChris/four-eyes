@@ -1,13 +1,17 @@
 import { useSyncExternalStore } from "react";
 
+export type ListTab = "active" | "past" | "suggested";
+
+const LIST_TABS: readonly ListTab[] = ["active", "past", "suggested"];
+
 export type Route =
-  | { readonly name: "list"; readonly tab: "active" | "past" }
+  | { readonly name: "list"; readonly tab: ListTab }
   | { readonly name: "review"; readonly reviewId: string; readonly chunkId: string | null }
   | { readonly name: "summary"; readonly reviewId: string }
   | { readonly name: "not-found"; readonly path: string };
 
 export const paths = {
-  list: (tab: "active" | "past" = "active"): string => (tab === "active" ? "/" : "/?tab=past"),
+  list: (tab: ListTab = "active"): string => (tab === "active" ? "/" : `/?tab=${tab}`),
   review: (reviewId: string, chunkId?: string): string =>
     `/reviews/${encodeURIComponent(reviewId)}${chunkId ? `?chunk=${encodeURIComponent(chunkId)}` : ""}`,
   summary: (reviewId: string): string => `/reviews/${encodeURIComponent(reviewId)}/summary`,
@@ -16,7 +20,10 @@ export const paths = {
 /** Maps a pathname + search string to a Route. */
 export const matchRoute = (pathname: string, search: string): Route => {
   const query = new URLSearchParams(search);
-  if (pathname === "/" || pathname === "") return { name: "list", tab: query.get("tab") === "past" ? "past" : "active" };
+  if (pathname === "/" || pathname === "") {
+    const tab = LIST_TABS.find((candidate) => candidate === query.get("tab")) ?? "active";
+    return { name: "list", tab };
+  }
   const summary = /^\/reviews\/([^/]+)\/summary\/?$/.exec(pathname);
   if (summary?.[1]) return { name: "summary", reviewId: decodeURIComponent(summary[1]) };
   const review = /^\/reviews\/([^/]+)\/?$/.exec(pathname);

@@ -8,3 +8,4 @@ export * as reviewsRepo from "./reviews";
 export * as roundsRepo from "./rounds";
 export * as settingsRepo from "./settings";
 export * as verdictsRepo from "./verdicts";
+export * as suggestionsRepo from "./suggestions";

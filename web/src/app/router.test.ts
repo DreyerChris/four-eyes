@@ -5,6 +5,8 @@ describe("matchRoute", () => {
   it("matches every page", () => {
     expect(matchRoute("/", "")).toEqual({ name: "list", tab: "active" });
     expect(matchRoute("/", "?tab=past")).toEqual({ name: "list", tab: "past" });
+    expect(matchRoute("/", "?tab=suggested")).toEqual({ name: "list", tab: "suggested" });
+    expect(matchRoute("/", "?tab=bogus")).toEqual({ name: "list", tab: "active" });
     expect(matchRoute("/reviews/rev_1", "?chunk=chk_2")).toEqual({ name: "review", reviewId: "rev_1", chunkId: "chk_2" });
     expect(matchRoute("/reviews/rev_1/summary", "")).toEqual({ name: "summary", reviewId: "rev_1" });
     expect(matchRoute("/nope", "")).toEqual({ name: "not-found", path: "/nope" });

@@ -13,6 +13,7 @@ import {
   ghReviewArgs,
   githubApiErrorDetail,
   parseGhPrJson,
+  parseGhSearchJson,
 } from "./github-client";
 import { parsePrUrl } from "./pr-url";
 
@@ -160,5 +161,41 @@ describe("githubApiErrorDetail", () => {
     expect(githubApiErrorDetail("")).toBeNull();
     expect(githubApiErrorDetail("not json")).toBeNull();
     expect(githubApiErrorDetail(JSON.stringify({ message: " " }))).toBeNull();
+  });
+});
+
+describe("parseGhSearchJson", () => {
+  const item = (repositoryUrl: string, login: string | null): unknown => ({
+    html_url: "https://ghe.example.com/team/svc/pull/4",
+    number: 4,
+    title: "Retry uploads",
+    user: login === null ? null : { login },
+    updated_at: "2026-06-01T10:00:00Z",
+    repository_url: repositoryUrl,
+  });
+
+  it("reads the owner and repo from github.com and GitHub Enterprise API URLs", () => {
+    const hits = parseGhSearchJson(
+      JSON.stringify({ items: [item("https://api.github.com/repos/acme/widgets", "alice"), item("https://ghe.example.com/api/v3/repos/team/svc", null)] }),
+    );
+    expect(hits.map((hit) => [hit.owner, hit.repo, hit.author])).toEqual([
+      ["acme", "widgets", "alice"],
+      ["team", "svc", "ghost"],
+    ]);
+  });
+
+  it("throws a readable error for unexpected output", () => {
+    expect(() => parseGhSearchJson("nope")).toThrow(/invalid JSON/);
+    expect(() => parseGhSearchJson(JSON.stringify({ total_count: 0 }))).toThrow(/unexpected JSON/);
+  });
+});
+
+describe("fake searchOpenPrs", () => {
+  it("returns the fixture PR for its repo or author on github.com only", async () => {
+    const client = createFakeGitHubClient(loadConfig({ FOUR_EYES_HOME: mkdtempSync(join(tmpdir(), "four-eyes-gh-")) }));
+    expect(await client.searchOpenPrs("github.com", "is:pr author:octocat")).toHaveLength(1);
+    expect(await client.searchOpenPrs("github.com", "is:pr repo:four-eyes-fixture/demo")).toHaveLength(1);
+    expect(await client.searchOpenPrs("github.com", "is:pr author:someone")).toEqual([]);
+    expect(await client.searchOpenPrs("ghe.example.com", "is:pr author:octocat")).toEqual([]);
   });
 });

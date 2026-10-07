@@ -5,6 +5,7 @@ import { registerProgressRoutes } from "./routes/progress";
 import { registerQuestionRoutes } from "./routes/questions";
 import { registerRefreshRoutes } from "./routes/refresh";
 import { registerReviewRoutes } from "./routes/reviews";
+import { registerSuggestionRoutes } from "./routes/suggestions";
 import { registerSettingsRoutes } from "./routes/settings";
 import { registerSourceRoutes } from "./routes/source";
 import { registerTestFixtureRoutes } from "./routes/test-fixtures";
@@ -20,6 +21,7 @@ export const createApp = (ctx: AppContext): Hono => {
   registerSourceRoutes(app, ctx);
   registerRefreshRoutes(app, ctx);
   registerSettingsRoutes(app, ctx);
+  registerSuggestionRoutes(app, ctx);
   registerTestFixtureRoutes(app, ctx);
   app.all("/api/*", (c) => c.json({ error: `No API route for ${c.req.method} ${c.req.path}` }, 404));
   return app;

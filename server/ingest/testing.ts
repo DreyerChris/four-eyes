@@ -53,6 +53,7 @@ export const createLocalGitHubClient = (repoPath: string, meta: (ref: PrRef) => 
   fetchPr: async (ref) => meta(ref),
   remoteUrl: () => repoPath,
   submitReview: refuseReviewSubmission,
+  searchOpenPrs: async () => [],
 });
 
 /** submitReview for test GitHub clients that never expect a review to be posted. */

@@ -7,6 +7,7 @@ import {
   ClaudeRunStatusSchema,
   FindingSchema,
   GitHubReviewEventSchema,
+  PrSuggestionSchema,
   HunkSchema,
   ModelSettingsSchema,
   ProgressEventSchema,
@@ -83,6 +84,15 @@ export const FinishReviewResponseSchema = z.object({
   review: ReviewListItemSchema,
 });
 export type FinishReviewResponse = z.infer<typeof FinishReviewResponseSchema>;
+
+export const SuggestionsResponseSchema = z.object({
+  enabled: z.boolean(),
+  suggestions: z.array(PrSuggestionSchema),
+  lastCheckedAt: z.string().nullable(),
+  checking: z.boolean(),
+  errors: z.array(z.object({ host: z.string(), message: z.string() })),
+});
+export type SuggestionsResponse = z.infer<typeof SuggestionsResponseSchema>;
 
 export const SubmitGitHubReviewRequestSchema = z
   .object({
@@ -458,6 +468,34 @@ export const routes = {
     query: null,
     body: null,
     event: ProgressEventSchema,
+  }),
+  listSuggestions: json({
+    method: "GET",
+    path: "/api/suggestions",
+    query: null,
+    body: null,
+    response: SuggestionsResponseSchema,
+  }),
+  checkSuggestions: json({
+    method: "POST",
+    path: "/api/suggestions/check",
+    query: null,
+    body: null,
+    response: SuggestionsResponseSchema,
+  }),
+  dismissSuggestion: json({
+    method: "POST",
+    path: "/api/suggestions/:suggestionId/dismiss",
+    query: null,
+    body: null,
+    response: OkResponseSchema,
+  }),
+  ignoreSuggestion: json({
+    method: "POST",
+    path: "/api/suggestions/:suggestionId/ignore",
+    query: null,
+    body: null,
+    response: OkResponseSchema,
   }),
   seedFixture: json({
     method: "POST",

@@ -1,16 +1,17 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type MouseEvent, type ReactElement, type ReactNode, type RefObject } from "react";
 import type { ReviewListItem } from "@shared/api";
-import { useCreateReview, useDeleteReview, useReviews } from "../../../api/queries";
-import { navigate, paths } from "../../../app/router";
+import { useCreateReview, useDeleteReview, useReviews, useSuggestions } from "../../../api/queries";
+import { navigate, paths, type ListTab } from "../../../app/router";
 import { flashStatus } from "../../../bus/context";
 import { useKeyBinding } from "../../../keys/hooks";
 import { Panel } from "../../../ui/Panel";
 import { formatRelative, progressBar } from "./format";
 import { IngestProgress } from "./IngestProgress";
+import { SuggestionsPanel } from "./SuggestionsPanel";
 import styles from "./ListPage.module.css";
 
 export interface ListPageProps {
-  readonly tab: "active" | "past";
+  readonly tab: ListTab;
 }
 
 const TabLink = ({ to, current, children }: { readonly to: string; readonly current: boolean; readonly children: ReactNode }): ReactElement => {
@@ -28,7 +29,7 @@ const TabLink = ({ to, current, children }: { readonly to: string; readonly curr
 
 interface PasteBoxProps {
   readonly inputRef: RefObject<HTMLInputElement | null>;
-  readonly tab: "active" | "past";
+  readonly tab: ListTab;
   readonly onLeave: (reviewId: string | null) => void;
 }
 
@@ -51,7 +52,7 @@ const PasteBox = ({ inputRef, tab, onLeave }: PasteBoxProps): ReactElement => {
           return;
         }
         flashStatus(`Added ${review.owner}/${review.repo}#${review.prNumber}`);
-        if (tab === "past") navigate(paths.list("active"));
+        if (tab !== "active") navigate(paths.list("active"));
         onLeave(review.id);
       },
     });
@@ -190,6 +191,12 @@ const ReviewRow = ({ review, index, now, confirming, onSelect, onAskDelete, onDe
   );
 };
 
+const TAB_HEADINGS: Readonly<Record<ListTab, string>> = {
+  active: "Active reviews",
+  past: "Past reviews",
+  suggested: "Suggested pull requests",
+};
+
 const useNow = (intervalMs: number): number => {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -199,9 +206,10 @@ const useNow = (intervalMs: number): number => {
   return now;
 };
 
-/** Active/Past tabs, paste box, review rows, delete with confirm, ingest progress view. */
+/** Active/Past/Suggested tabs, paste box, review rows, delete with confirm, ingest progress view, PR suggestions. */
 export const ListPage = ({ tab }: ListPageProps): ReactElement => {
-  const { data, error, isPending } = useReviews(tab);
+  const { data, error, isPending } = useReviews(tab === "past" ? "past" : "active");
+  const suggestionCount = useSuggestions().data?.suggestions.length ?? 0;
   const reviews = data?.reviews ?? [];
   const listRef = useRef<HTMLUListElement>(null);
   const pasteRef = useRef<HTMLInputElement>(null);
@@ -259,39 +267,54 @@ export const ListPage = ({ tab }: ListPageProps): ReactElement => {
       <TabLink to={paths.list("past")} current={tab === "past"}>
         past
       </TabLink>
+      <TabLink to={paths.list("suggested")} current={tab === "suggested"}>
+        suggested{suggestionCount > 0 ? ` (${suggestionCount})` : ""}
+      </TabLink>
     </nav>
   );
 
   return (
     <>
-      <h1 className="visually-hidden">{tab === "active" ? "Active reviews" : "Past reviews"}</h1>
+      <h1 className="visually-hidden">{TAB_HEADINGS[tab]}</h1>
       <Panel title="add a pull request">
         <PasteBox inputRef={pasteRef} tab={tab} onLeave={leavePasteBox} />
       </Panel>
       <Panel title={`reviews · ${tab}`} actions={tabs}>
-        {isPending ? <p>Loading reviews…</p> : null}
-        {error ? <p role="alert">Could not load reviews: {error.message}</p> : null}
-        {data && reviews.length === 0 ? (
-          <p className={styles.muted}>
-            {tab === "active" ? "No active reviews. Paste a PR link above to start one." : "No past reviews yet. Finished, merged and closed reviews appear here."}
-          </p>
-        ) : null}
-        {reviews.length > 0 ? (
-          <ul ref={listRef} className={styles.list} aria-label={tab === "active" ? "Active reviews" : "Past reviews"}>
-            {reviews.map((review, index) => (
-              <ReviewRow
-                key={review.id}
-                review={review}
-                index={index}
-                now={now}
-                confirming={confirmingId === review.id}
-                onSelect={setSelected}
-                onAskDelete={setConfirmingId}
-                onDeleted={() => pasteRef.current?.focus()}
-              />
-            ))}
-          </ul>
-        ) : null}
+        {tab === "suggested" ? (
+          <SuggestionsPanel
+            now={now}
+            onAdded={(reviewId) => {
+              navigate(paths.list("active"));
+              setFocusReviewId(reviewId);
+            }}
+          />
+        ) : (
+          <>
+            {isPending ? <p>Loading reviews…</p> : null}
+            {error ? <p role="alert">Could not load reviews: {error.message}</p> : null}
+            {data && reviews.length === 0 ? (
+              <p className={styles.muted}>
+                {tab === "active" ? "No active reviews. Paste a PR link above to start one." : "No past reviews yet. Finished, merged and closed reviews appear here."}
+              </p>
+            ) : null}
+            {reviews.length > 0 ? (
+              <ul ref={listRef} className={styles.list} aria-label={tab === "active" ? "Active reviews" : "Past reviews"}>
+                {reviews.map((review, index) => (
+                  <ReviewRow
+                    key={review.id}
+                    review={review}
+                    index={index}
+                    now={now}
+                    confirming={confirmingId === review.id}
+                    onSelect={setSelected}
+                    onAskDelete={setConfirmingId}
+                    onDeleted={() => pasteRef.current?.focus()}
+                  />
+                ))}
+              </ul>
+            ) : null}
+          </>
+        )}
       </Panel>
     </>
   );

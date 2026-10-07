@@ -26,6 +26,7 @@ export const createFakeGitHub = (initial: PrMeta): FakeGitHub => {
     },
     remoteUrl: () => "file:///dev/null",
     submitReview: refuseReviewSubmission,
+    searchOpenPrs: async () => [],
     setPr: (patch) => {
       state.meta = { ...state.meta, ...patch };
     },

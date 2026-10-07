@@ -1,0 +1,1 @@
+ALTER TABLE `pr_suggestions` ADD `ignored_at` text;

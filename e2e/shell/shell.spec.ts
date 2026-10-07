@@ -259,3 +259,38 @@ test.describe("keyboard only", () => {
     await expect(page.getByRole("contentinfo", { name: "Status bar" })).toContainText("Open a review to ask Claude a question");
   });
 });
+
+test.describe("suggestions", () => {
+  test("suggests the fixture PR, hides it for good with not interested until added, and adds it with Review this", async ({ page, request }) => {
+    await seedReview(request);
+    await removeFixturePr(request);
+    await page.goto("/?tab=suggested");
+    const suggested = page.getByRole("list", { name: "Suggested pull requests" });
+    const row = suggested.getByRole("listitem").filter({ hasText: "Add email to users and send a welcome mail" });
+
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(row).toBeVisible();
+    await expect(row.getByText("@octocat's PRs you reviewed before")).toBeVisible();
+    await expect(page.getByRole("link", { name: /^suggested \(\d+\)$/ })).toBeVisible();
+    await expectNoA11yViolations(page);
+
+    await row.getByRole("button", { name: /^Not interested:/ }).click();
+    await expect(row).toBeHidden();
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.getByText(/^Checked /)).toBeVisible();
+    await expect(row).toBeHidden();
+
+    await page.keyboard.press("/");
+    await page.keyboard.type(FIXTURE_PR_URL);
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/$/);
+    await removeFixturePr(request);
+
+    await page.goto("/?tab=suggested");
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(row).toBeVisible();
+    await row.getByRole("button", { name: /^Review this:/ }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole("link", { name: "Add email to users and send a welcome mail" })).toBeFocused({ timeout: 30_000 });
+  });
+});

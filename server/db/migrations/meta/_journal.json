@@ -15,6 +15,20 @@
       "when": 1791375971246,
       "tag": "0001_oval_kid_colt",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791378750011,
+      "tag": "0002_rapid_warlock",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1791378917802,
+      "tag": "0003_hesitant_fabian_cortez",
+      "breakpoints": true
     }
   ]
 }

@@ -66,6 +66,7 @@ const SettingsForm = ({ settings }: { readonly settings: Settings }): ReactEleme
   const update = useUpdateSettings();
   const [models, setModels] = useState<ModelSettings>(settings.models);
   const [inlineFindings, setInlineFindings] = useState(settings.inlineFindings);
+  const [suggestPrs, setSuggestPrs] = useState(settings.suggestPrs);
   const [theme, setTheme] = useState<Theme>(settings.theme);
   const [verbosity, setVerbosity] = useState<Verbosity>(settings.verbosity);
   const [claudePath, setClaudePath] = useState(settings.claudePath ?? "");
@@ -81,7 +82,7 @@ const SettingsForm = ({ settings }: { readonly settings: Settings }): ReactEleme
       qaOpus: models.qaOpus.trim(),
     };
     update.mutate(
-      { models: trimmed, inlineFindings, theme, verbosity, claudePath: claudePath.trim() === "" ? null : claudePath.trim() },
+      { models: trimmed, inlineFindings, suggestPrs, theme, verbosity, claudePath: claudePath.trim() === "" ? null : claudePath.trim() },
       {
         onSuccess: () => {
           flashStatus("Settings saved");
@@ -164,6 +165,15 @@ const SettingsForm = ({ settings }: { readonly settings: Settings }): ReactEleme
         </div>
       </fieldset>
       <fieldset className={styles.fieldset}>
+        <legend>Suggestions</legend>
+        <div className={styles.check}>
+          <input id={`${baseId}-suggest`} type="checkbox" checked={suggestPrs} onChange={(event) => setSuggestPrs(event.target.checked)} />
+          <label htmlFor={`${baseId}-suggest`}>
+            Suggest open PRs from repos you reviewed recently and people you reviewed before (checks GitHub every 15 minutes)
+          </label>
+        </div>
+      </fieldset>
+      <fieldset className={styles.fieldset}>
         <legend>Look</legend>
         <div className={styles.row}>
           <label htmlFor={`${baseId}-theme`}>Theme</label>
@@ -212,7 +222,7 @@ const SettingsDialog = (): ReactElement => {
   );
 };
 
-/** Settings panel (models, Claude executable, output length, inline findings, theme). Renders as a fixed-position overlay; returns null while closed. */
+/** Settings panel (models, Claude executable, output length, inline findings, PR suggestions, theme). Renders as a fixed-position overlay; returns null while closed. */
 export const SettingsPanel = (_props: SettingsPanelProps): ReactElement | null => {
   const open = useIsOverlayOpen("settings");
   useKeyBinding({ id: "shell-settings", key: ",", scope: "global", description: "settings", handler: () => openOverlay("settings") });

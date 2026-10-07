@@ -17,6 +17,7 @@ import type {
   SetFindingVerdictRequest,
   SubmitGitHubReviewRequest,
   SubmitGitHubReviewResponse,
+  SuggestionsResponse,
   SummaryResponse,
   UpdateChunkProgressRequest,
   UpdateSettingsRequest,
@@ -26,6 +27,7 @@ import { api } from "./client";
 
 export const queryKeys = {
   reviews: (status?: ReviewStatus) => ["reviews", status ?? "all"] as const,
+  suggestions: ["suggestions"] as const,
   allReviews: ["reviews"] as const,
   review: (reviewId: string) => ["review", reviewId] as const,
   summary: (reviewId: string) => ["summary", reviewId] as const,
@@ -53,6 +55,27 @@ export const invalidateReview = async (client: QueryClient, reviewId: string): P
 
 export const useReviews = (status?: ReviewStatus): UseQueryResult<ListReviewsResponse> =>
   useQuery({ queryKey: queryKeys.reviews(status), queryFn: () => api.listReviews({ status }), refetchInterval: 30_000 });
+
+export const useSuggestions = (): UseQueryResult<SuggestionsResponse> =>
+  useQuery({ queryKey: queryKeys.suggestions, queryFn: () => api.listSuggestions(), refetchInterval: 60_000 });
+
+export const useCheckSuggestions = (): UseMutationResult<SuggestionsResponse, Error, void> => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.checkSuggestions(),
+    onSuccess: (data) => client.setQueryData(queryKeys.suggestions, data),
+  });
+};
+
+export type SuggestionAction = "dismiss" | "ignore";
+
+export const useHideSuggestion = (): UseMutationResult<OkResponse, Error, { readonly id: string; readonly action: SuggestionAction }> => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, action }) => (action === "dismiss" ? api.dismissSuggestion(id) : api.ignoreSuggestion(id)),
+    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.suggestions }),
+  });
+};
 
 export const useReview = (reviewId: string): UseQueryResult<ReviewDetailResponse> =>
   useQuery({ queryKey: queryKeys.review(reviewId), queryFn: () => api.getReview(reviewId) });
@@ -111,7 +134,12 @@ export const useCreateReview = (): UseMutationResult<CreateReviewResponse, Error
   const client = useQueryClient();
   return useMutation({
     mutationFn: (url: string) => api.createReview({ url }),
-    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.allReviews }),
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: queryKeys.allReviews }),
+        client.invalidateQueries({ queryKey: queryKeys.suggestions }),
+      ]);
+    },
   });
 };
 

@@ -14,6 +14,7 @@ export interface AppConfig {
   readonly searchPath: string | undefined;
   readonly production: boolean;
   readonly pollIntervalMs: number;
+  readonly suggestionPollMs: number;
 }
 
 const parsePort = (raw: string | undefined, fallback: number): number => {
@@ -49,6 +50,7 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
     searchPath: env.PATH,
     production: env.NODE_ENV === "production",
     pollIntervalMs: parsePositiveInt("FOUR_EYES_POLL_MS", env.FOUR_EYES_POLL_MS, 120_000),
+    suggestionPollMs: parsePositiveInt("FOUR_EYES_SUGGESTIONS_POLL_MS", env.FOUR_EYES_SUGGESTIONS_POLL_MS, 15 * 60_000),
   };
 };
 

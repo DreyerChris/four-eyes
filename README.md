@@ -45,6 +45,19 @@ pnpm start
 
 Everything also works with the mouse.
 
+### Suggested PRs
+
+The **suggested** tab lists open PRs you might want to review: PRs in repos you reviewed in the last 30 days, and PRs by people whose PRs you reviewed before. four-eyes searches GitHub with your `gh` login when it starts and then every 15 minutes, and **Check now** searches straight away. Drafts and your own PRs are left out, and so are PRs already in four-eyes.
+
+A suggestion never starts Claude on its own. Each row has:
+
+- **Review this**, which adds the PR exactly like pasting its link.
+- **Open on GitHub**.
+- **Dismiss**, which hides the PR until it gets new activity.
+- **Not interested**, which hides the PR for good. Adding the PR yourself later clears this.
+
+Suggestions that GitHub stops returning, for example because the PR was merged or closed, are removed on the next check.
+
 ### Submitting your review
 
 The summary page has a **submit to GitHub** panel. Pick Approve, Comment or Request changes, optionally write a comment, and submit. The comment is optional when you approve, and GitHub requires one for the other two. **Add full review to comment** appends the same markdown that **Copy full review** copies.
@@ -58,6 +71,7 @@ Open settings with `,`.
 - **Models** used for chunking, the background review and Q&A. Defaults are Sonnet for chunking and Q&A and Opus for the review.
 - **Claude executable.** Leave empty to use `claude` from your PATH. Set it if your Claude Code lives somewhere else or you start it through a wrapper. Accepts an absolute path, `~/...`, or a command name on your PATH. The panel shows which binary will be used and its version.
 - **Claude's output length.** How much Claude writes in chunk explanations, findings, the verdict and Q&A answers: `brief`, `standard` (the default) or `detailed`. It applies to reviews and questions run after you change it, including follow-up questions in an existing Q&A session.
+- **Suggestions.** Turn the suggested tab's GitHub searches on or off. Turning it on starts a search straight away.
 - **Inline findings.** Show Claude's findings on each chunk while you step through, instead of only on the summary.
 
 The Claude binary is chosen in this order: the settings value, then `FOUR_EYES_CLAUDE_PATH`, then `claude` on PATH.
@@ -70,6 +84,7 @@ The Claude binary is chosen in this order: the settings value, then `FOUR_EYES_C
 | `FOUR_EYES_CLAUDE_PATH` | Claude Code binary, used when the setting is empty |
 | `PORT` | Server port (default `8787`) |
 | `FOUR_EYES_POLL_MS` | How often to check open PRs for new commits (default `120000`) |
+| `FOUR_EYES_SUGGESTIONS_POLL_MS` | How often to search GitHub for suggested PRs (default `900000`, 15 minutes) |
 | `FOUR_EYES_NO_OPEN=1` | Do not open a browser on start (macOS) |
 | `FOUR_EYES_FAKE_CLAUDE=1` | Use canned Claude responses instead of real runs (tests, no tokens) |
 | `FOUR_EYES_FAKE_GH=1` | Use a recorded fixture PR instead of GitHub (tests, no network) |

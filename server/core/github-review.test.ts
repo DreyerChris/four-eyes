@@ -26,6 +26,7 @@ describe("submitGitHubReview route", () => {
           submitted.push({ ref, submission });
           return { url: `https://github.com/${ref.owner}/${ref.repo}/pull/${ref.number}#pullrequestreview-1` };
         },
+        searchOpenPrs: async () => [],
       },
     });
     app = createApp(handle.ctx);
