@@ -1,0 +1,14 @@
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 1ch;
+}
+
+.attention {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.error {
+  color: var(--fg-muted);
+}

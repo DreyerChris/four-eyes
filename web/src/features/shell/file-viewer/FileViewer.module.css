@@ -1,0 +1,66 @@
+.toggle {
+  display: inline-flex;
+  gap: 0.5ch;
+}
+
+.toggle button[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.meta {
+  color: var(--fg-muted);
+}
+
+.code {
+  overflow: auto;
+  max-height: 64vh;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  white-space: pre;
+}
+
+.line {
+  display: flex;
+  min-width: max-content;
+}
+
+.gutter {
+  flex: none;
+  width: 6ch;
+  padding-right: 1ch;
+  text-align: right;
+  color: var(--diff-gutter-fg);
+  user-select: none;
+}
+
+.marker {
+  flex: none;
+  width: 2ch;
+  user-select: none;
+}
+
+.text {
+  font-family: inherit;
+  padding-right: 2ch;
+}
+
+.added {
+  background: var(--diff-add-bg);
+}
+
+.added .marker {
+  color: var(--diff-add-fg);
+}
+
+.removed {
+  background: var(--diff-del-bg);
+}
+
+.removed .marker {
+  color: var(--diff-del-fg);
+}
+
+.focus {
+  box-shadow: inset 3px 0 0 var(--focus);
+}

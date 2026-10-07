@@ -1,0 +1,14 @@
+diff --git a/assets/icon.bin b/assets/icon.bin
+new file mode 100644
+index 0000000..0df5c99
+Binary files /dev/null and b/assets/icon.bin differ
+diff --git a/assets/logo.png b/assets/logo.png
+index b61c335..c2af6e8 100644
+Binary files a/assets/logo.png and b/assets/logo.png differ
+diff --git a/notes.txt b/notes.txt
+index 5626abf..814f4a4 100644
+--- a/notes.txt
++++ b/notes.txt
+@@ -1 +1,2 @@
+ one
++two

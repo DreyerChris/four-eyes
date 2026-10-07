@@ -1,0 +1,11 @@
+export const randomId = (): string => Math.random().toString(36).slice(2, 10);
+
+export const formatName = (first: string, last: string): string => `${first} ${last}`;
+
+export const initials = (name: string): string =>
+  name
+    .split(" ")
+    .map((part) => part.charAt(0))
+    .join("");
+
+export const truncate = (text: string, max: number): string => (text.length > max ? `${text.slice(0, max)}…` : text);

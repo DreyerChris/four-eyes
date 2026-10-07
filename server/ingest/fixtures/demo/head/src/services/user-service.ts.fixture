@@ -1,0 +1,46 @@
+import type { User } from "../types/user";
+import { randomId } from "../utils/formatting";
+
+export interface UserStore {
+  save(user: User): Promise<void>;
+  all(): readonly User[];
+}
+
+export interface Mailer {
+  sendWelcome(email: string): Promise<void>;
+}
+
+export class UserService {
+  constructor(
+    private readonly store: UserStore,
+    private readonly mailer: Mailer,
+  ) {}
+
+  async createUser(name: string): Promise<User> {
+    const email = `${name.toLowerCase()}@example.com`;
+    const user = { id: randomId(), name, email, createdAt: new Date() };
+    await this.mailer.sendWelcome(email);
+    await this.store.save(user);
+    return user;
+  }
+
+  count(): number {
+    return this.store.all().length;
+  }
+
+  names(): readonly string[] {
+    return this.store.all().map((u) => u.name);
+  }
+
+  newest(): User | undefined {
+    return [...this.store.all()].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+  }
+
+  oldest(): User | undefined {
+    return [...this.store.all()].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0];
+  }
+
+  findByName(name: string): User | undefined {
+    return this.store.all().find((u) => u.name.toLowerCase() === name.toLowerCase());
+  }
+}

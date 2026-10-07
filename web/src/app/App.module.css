@@ -1,0 +1,42 @@
+.shell {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 2ch;
+  padding: var(--space-1) 1ch;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.crumb {
+  color: var(--fg-muted);
+}
+
+.main {
+  overflow: auto;
+  padding: var(--space-2) 1ch var(--space-3);
+  min-height: 0;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+}
+
+.skip:focus {
+  left: 1ch;
+  top: 0.25rem;
+  z-index: 10;
+  background: var(--bg-raised);
+  padding: 0 1ch;
+}

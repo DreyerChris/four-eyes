@@ -1,0 +1,154 @@
+.tabs {
+  display: flex;
+  gap: 2ch;
+}
+
+.tab,
+.tabCurrent {
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.tab {
+  color: var(--fg-muted);
+}
+
+.tabCurrent {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.paste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1ch;
+}
+
+.pasteInput {
+  flex: 1;
+  min-width: 30ch;
+}
+
+.paste .error {
+  flex-basis: 100%;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  gap: 2ch;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-1);
+  border-bottom: 1px solid var(--border);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:focus-within {
+  background: var(--bg-hover);
+}
+
+.rowMain {
+  min-width: 0;
+  flex: 1;
+}
+
+.rowLink {
+  font-weight: 700;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.rowLink:hover {
+  text-decoration: underline;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5ch 2ch;
+  color: var(--fg-muted);
+}
+
+.rowActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1ch;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.badge {
+  color: var(--warn);
+  border: 1px solid var(--warn);
+  padding: 0 0.5ch;
+}
+
+.ghOpen {
+  color: var(--ok);
+}
+
+.ghMerged {
+  color: var(--info);
+}
+
+.ghClosed {
+  color: var(--danger);
+}
+
+.muted {
+  color: var(--fg-muted);
+}
+
+.error {
+  color: var(--danger);
+  margin: var(--space-1) 0 0;
+}
+
+.steps {
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepPending {
+  color: var(--fg-muted);
+}
+
+.stepStarted {
+  color: var(--warn);
+}
+
+.stepDone {
+  color: var(--ok);
+}
+
+.stepFailed {
+  color: var(--danger);
+}
+
+.stepMessage {
+  color: var(--fg-muted);
+}

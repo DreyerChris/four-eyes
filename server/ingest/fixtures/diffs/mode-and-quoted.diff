@@ -1,0 +1,24 @@
+diff --git "a/docs/caf\303\251.md" "b/docs/caf\303\251.md"
+index 1cd909e..aa37d30 100644
+--- "a/docs/caf\303\251.md"
++++ "b/docs/caf\303\251.md"
+@@ -1 +1 @@
+-bonjour
++bonjour le monde
+diff --git "a/docs/tab\tname.md" "b/docs/tab\tname.md"
+new file mode 100644
+index 0000000..72e24ec
+--- /dev/null
++++ "b/docs/tab\tname.md"
+@@ -0,0 +1 @@
++tabbed
+diff --git a/docs/with space.md b/docs/with space.md
+index ce01362..3b18e51 100644
+--- a/docs/with space.md	
++++ b/docs/with space.md	
+@@ -1 +1 @@
+-hello
++hello world
+diff --git a/run.sh b/run.sh
+old mode 100644
+new mode 100755

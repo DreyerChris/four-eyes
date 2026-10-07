@@ -1,0 +1,288 @@
+.diff {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.diff:focus-visible {
+  outline-offset: 4px;
+}
+
+.hunk {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-inset);
+  min-width: 0;
+}
+
+.gone {
+  border-style: dashed;
+}
+
+.gone .table {
+  opacity: 0.75;
+}
+
+.fileHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1ch;
+  padding: var(--space-1) 1ch;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+.fileName {
+  border: none;
+  background: none;
+  padding: 0;
+  min-height: 0;
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+  text-align: left;
+}
+
+.fileName:hover:not(:disabled) {
+  background: none;
+  text-decoration-thickness: 2px;
+}
+
+.badge {
+  border: 1px solid currentColor;
+  border-radius: var(--radius);
+  padding: 0 0.5ch;
+  color: var(--fg-muted);
+  font-size: 0.9em;
+}
+
+.change_added {
+  color: var(--diff-add-fg);
+}
+
+.change_deleted {
+  color: var(--diff-del-fg);
+}
+
+.change_renamed {
+  color: var(--info);
+}
+
+.goneLabel {
+  color: var(--warn);
+  border: 1px solid var(--warn);
+  border-radius: var(--radius);
+  padding: 0 0.5ch;
+}
+
+.muted {
+  color: var(--fg-muted);
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: var(--font-mono);
+  tab-size: 4;
+}
+
+.split {
+  table-layout: fixed;
+}
+
+.numberCol {
+  width: 7ch;
+}
+
+.markerCol {
+  width: 3ch;
+}
+
+.split .number,
+.split .marker {
+  width: auto;
+  min-width: 0;
+}
+
+.row td {
+  padding: 0;
+  vertical-align: top;
+}
+
+.number {
+  width: 1%;
+  min-width: 5ch;
+  padding: 0 1ch !important;
+  text-align: right;
+  color: var(--diff-gutter-fg);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.number::before {
+  content: attr(data-n);
+}
+
+.marker {
+  width: 2ch;
+  padding: 0 0.5ch !important;
+  user-select: none;
+  white-space: pre;
+}
+
+.marker::before {
+  content: attr(data-marker);
+}
+
+.code {
+  white-space: pre;
+  padding-right: 2ch !important;
+}
+
+.code[data-line-selected] {
+  background: var(--bg-selected);
+  box-shadow: inset 2px 0 0 var(--focus);
+}
+
+.split .code {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.noEol::after {
+  content: " ⊘ no newline at end of file";
+  color: var(--fg-muted);
+  user-select: none;
+}
+
+.add {
+  background: var(--diff-add-bg);
+}
+
+.add.marker,
+.add.number {
+  color: var(--diff-add-fg);
+}
+
+.del {
+  background: var(--diff-del-bg);
+}
+
+.del.marker,
+.del.number {
+  color: var(--diff-del-fg);
+}
+
+.empty {
+  background: var(--bg-raised);
+}
+
+.word {
+  border-radius: var(--radius);
+  color: var(--fg);
+}
+
+.add .word {
+  background: var(--diff-add-word-bg);
+}
+
+.del .word {
+  background: var(--diff-del-word-bg);
+}
+
+.token {
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+
+.token:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.token:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 0;
+}
+
+.hunkHeader td {
+  padding: 0 1ch;
+  color: var(--diff-hunk-fg);
+  background: var(--diff-hunk-bg);
+  white-space: pre;
+}
+
+.expandRow td {
+  padding: 0;
+  background: var(--diff-hunk-bg);
+}
+
+.expand {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--diff-hunk-fg);
+  text-align: left;
+  padding: 0 1ch;
+}
+
+.collapse {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--diff-hunk-fg);
+  padding: 0 1ch;
+}
+
+.collapse:hover {
+  background: var(--bg-hover);
+}
+
+.expand:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.error {
+  color: var(--danger);
+  padding: 0 1ch !important;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.findingRow > td {
+  padding: var(--space-1) 1ch;
+  background: var(--bg);
+  white-space: normal;
+}
+
+.marked_bug > td:first-child {
+  box-shadow: inset 3px 0 0 var(--severity-bug);
+}
+
+.marked_risk > td:first-child {
+  box-shadow: inset 3px 0 0 var(--severity-risk);
+}
+
+.marked_improvement > td:first-child {
+  box-shadow: inset 3px 0 0 var(--severity-improvement);
+}
+
+.marked_nit > td:first-child {
+  box-shadow: inset 3px 0 0 var(--severity-nit);
+}

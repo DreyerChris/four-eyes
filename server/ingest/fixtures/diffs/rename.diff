@@ -1,0 +1,20 @@
+diff --git a/src/format.ts b/src/formatting.ts
+similarity index 94%
+rename from src/format.ts
+rename to src/formatting.ts
+index b28c98b..765dfbb 100644
+--- a/src/format.ts
++++ b/src/formatting.ts
+@@ -7,7 +7,7 @@ export const f6 = (x: number): number => x * 6;
+ export const f7 = (x: number): number => x * 7;
+ export const f8 = (x: number): number => x * 8;
+ export const f9 = (x: number): number => x * 9;
+-export const f10 = (x: number): number => x * 10;
++export const f10 = (x: number): number => x * 100;
+ export const f11 = (x: number): number => x * 11;
+ export const f12 = (x: number): number => x * 12;
+ export const f13 = (x: number): number => x * 13;
+diff --git a/src/pure.ts b/src/pure-renamed.ts
+similarity index 100%
+rename from src/pure.ts
+rename to src/pure-renamed.ts

@@ -1,0 +1,61 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg-inset) 70%, transparent);
+}
+
+.dialog {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  outline-offset: 0;
+}
+
+.dialog:focus {
+  outline: none;
+}
+
+.center {
+  top: 8vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(110ch, 94vw);
+  max-height: 80vh;
+}
+
+.bottom {
+  left: 0;
+  right: 0;
+  bottom: var(--status-bar-height);
+  padding: 0 1ch var(--space-1);
+}
+
+.side {
+  top: 0;
+  right: 0;
+  bottom: var(--status-bar-height);
+  width: min(80ch, 96vw);
+  padding: var(--space-2) 1ch;
+  border-left: 1px solid var(--border);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  background: var(--bg);
+}
+
+.body {
+  overflow: auto;
+  min-height: 0;
+  flex: 1;
+}

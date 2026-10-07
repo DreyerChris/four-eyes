@@ -1,0 +1,7 @@
+import { Router } from "../http/router";
+import { createUserHandler, findUserHandler } from "../handlers/users";
+
+const router = new Router();
+router.post("/users", createUserHandler);
+router.get("/users/:name", findUserHandler);
+export default router;

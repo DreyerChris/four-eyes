@@ -1,0 +1,48 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fieldset legend {
+  color: var(--fg-muted);
+  padding: 0 1ch;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(20ch, 1fr) 2fr;
+  align-items: center;
+  gap: 2ch;
+}
+
+.check {
+  display: flex;
+  align-items: baseline;
+  gap: 1ch;
+}
+
+.hint {
+  color: var(--fg-muted);
+  margin: 0;
+}
+
+.error {
+  color: var(--danger);
+  margin: 0;
+}
+
+.buttons {
+  display: flex;
+  gap: 1ch;
+}

@@ -1,0 +1,30 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 2ch;
+  height: var(--status-bar-height);
+  padding: 0 1ch;
+  border-top: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.hints {
+  display: flex;
+  gap: 2ch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  flex: 1;
+}
+
+.hint kbd {
+  margin-right: 0.5ch;
+}
+
+.message {
+  color: var(--fg);
+}

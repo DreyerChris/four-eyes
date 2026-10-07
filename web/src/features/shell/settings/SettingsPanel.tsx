@@ -1,0 +1,184 @@
+import { useId, useState, type FormEvent, type ReactElement } from "react";
+import { MODEL_IDS, THEMES, type ClaudeExecutableSource, type ModelSettings, type Settings, type Theme } from "@shared/domain";
+import { useClaudeExecutable, useSettings, useUpdateSettings } from "../../../api/queries";
+import type { Route } from "../../../app/router";
+import { flashStatus } from "../../../bus/context";
+import { useAppEvent } from "../../../bus/events";
+import { useKeyBinding } from "../../../keys/hooks";
+import { Overlay } from "../overlay/Overlay";
+import { closeOverlay, openOverlay, useIsOverlayOpen } from "../overlay/store";
+import styles from "./SettingsPanel.module.css";
+
+export interface SettingsPanelProps {
+  readonly route: Route;
+}
+
+const MODEL_FIELDS: readonly { readonly key: keyof ModelSettings; readonly label: string }[] = [
+  { key: "chunking", label: "Chunking model" },
+  { key: "review", label: "Review model" },
+  { key: "qa", label: "Q&A model" },
+  { key: "qaOpus", label: "Q&A model when “ask Opus” is on" },
+];
+
+const SOURCE_LABELS: Readonly<Record<ClaudeExecutableSource, string>> = {
+  settings: "from settings",
+  env: "from FOUR_EYES_CLAUDE_PATH",
+  path: "found on PATH",
+};
+
+const ClaudeExecutableStatusLine = ({ id }: { readonly id: string }): ReactElement => {
+  const { data, error, isPending } = useClaudeExecutable();
+  const text = isPending
+    ? "Checking which claude will be used…"
+    : error
+      ? `Could not check the Claude binary: ${error.message}`
+      : data?.ok
+        ? `Using ${data.path} (${data.version}), ${SOURCE_LABELS[data.source]}`
+        : data?.error ?? "";
+  const failed = error !== null || data?.ok === false;
+  return (
+    <p id={id} aria-live="polite" className={failed ? styles.error : styles.hint}>
+      {text}
+    </p>
+  );
+};
+
+const isTheme = (value: string): value is Theme => (THEMES as readonly string[]).includes(value);
+
+const SettingsForm = ({ settings }: { readonly settings: Settings }): ReactElement => {
+  const baseId = useId();
+  const update = useUpdateSettings();
+  const [models, setModels] = useState<ModelSettings>(settings.models);
+  const [inlineFindings, setInlineFindings] = useState(settings.inlineFindings);
+  const [theme, setTheme] = useState<Theme>(settings.theme);
+  const [claudePath, setClaudePath] = useState(settings.claudePath ?? "");
+  const blankModel = MODEL_FIELDS.find((field) => models[field.key].trim() === "");
+
+  const onSubmit = (event: FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    if (blankModel) return;
+    const trimmed: ModelSettings = {
+      chunking: models.chunking.trim(),
+      review: models.review.trim(),
+      qa: models.qa.trim(),
+      qaOpus: models.qaOpus.trim(),
+    };
+    update.mutate(
+      { models: trimmed, inlineFindings, theme, claudePath: claudePath.trim() === "" ? null : claudePath.trim() },
+      {
+        onSuccess: () => {
+          flashStatus("Settings saved");
+          closeOverlay("settings");
+        },
+      },
+    );
+  };
+
+  return (
+    <form className={styles.form} onSubmit={onSubmit} noValidate>
+      <fieldset className={styles.fieldset}>
+        <legend>Models</legend>
+        <datalist id={`${baseId}-models`}>
+          {Object.values(MODEL_IDS).map((id) => (
+            <option key={id} value={id} />
+          ))}
+        </datalist>
+        {MODEL_FIELDS.map((field) => (
+          <div key={field.key} className={styles.row}>
+            <label htmlFor={`${baseId}-${field.key}`}>{field.label}</label>
+            <input
+              id={`${baseId}-${field.key}`}
+              list={`${baseId}-models`}
+              value={models[field.key]}
+              onChange={(event) => setModels((previous) => ({ ...previous, [field.key]: event.target.value }))}
+              aria-invalid={models[field.key].trim() === ""}
+              spellCheck={false}
+              autoComplete="off"
+            />
+          </div>
+        ))}
+      </fieldset>
+      <fieldset className={styles.fieldset}>
+        <legend>Claude Code</legend>
+        <div className={styles.row}>
+          <label htmlFor={`${baseId}-claude-path`}>Claude executable</label>
+          <input
+            id={`${baseId}-claude-path`}
+            value={claudePath}
+            onChange={(event) => setClaudePath(event.target.value)}
+            placeholder="automatic: claude on PATH"
+            aria-describedby={`${baseId}-claude-status`}
+            spellCheck={false}
+            autoComplete="off"
+          />
+        </div>
+        <ClaudeExecutableStatusLine id={`${baseId}-claude-status`} />
+      </fieldset>
+      <fieldset className={styles.fieldset}>
+        <legend>Review</legend>
+        <div className={styles.check}>
+          <input
+            id={`${baseId}-inline`}
+            type="checkbox"
+            checked={inlineFindings}
+            onChange={(event) => setInlineFindings(event.target.checked)}
+          />
+          <label htmlFor={`${baseId}-inline`}>Show Claude's findings inline while stepping (otherwise only on the summary)</label>
+        </div>
+      </fieldset>
+      <fieldset className={styles.fieldset}>
+        <legend>Look</legend>
+        <div className={styles.row}>
+          <label htmlFor={`${baseId}-theme`}>Theme</label>
+          <select
+            id={`${baseId}-theme`}
+            value={theme}
+            onChange={(event) => {
+              if (isTheme(event.target.value)) setTheme(event.target.value);
+            }}
+          >
+            <option value="dark">dark</option>
+            <option value="light">light (preview)</option>
+          </select>
+        </div>
+      </fieldset>
+      {blankModel ? (
+        <p role="alert" className={styles.error}>
+          {blankModel.label} cannot be empty.
+        </p>
+      ) : null}
+      {update.error ? (
+        <p role="alert" className={styles.error}>
+          Could not save settings: {update.error.message}
+        </p>
+      ) : null}
+      <div className={styles.buttons}>
+        <button type="submit" disabled={update.isPending || blankModel !== undefined}>
+          {update.isPending ? "saving…" : "save"}
+        </button>
+        <button type="button" onClick={() => closeOverlay("settings")}>
+          cancel
+        </button>
+      </div>
+    </form>
+  );
+};
+
+const SettingsDialog = (): ReactElement => {
+  const { data, error, isPending } = useSettings();
+  return (
+    <Overlay name="settings" title="settings">
+      {isPending ? <p>Loading settings…</p> : null}
+      {error ? <p role="alert">Could not load settings: {error.message}</p> : null}
+      {data ? <SettingsForm settings={data} /> : null}
+    </Overlay>
+  );
+};
+
+/** Settings panel (models, Claude executable, inline findings, theme). Renders as a fixed-position overlay; returns null while closed. */
+export const SettingsPanel = (_props: SettingsPanelProps): ReactElement | null => {
+  const open = useIsOverlayOpen("settings");
+  useKeyBinding({ id: "shell-settings", key: ",", scope: "global", description: "settings", handler: () => openOverlay("settings") });
+  useAppEvent("open-settings", () => openOverlay("settings"));
+  return open ? <SettingsDialog /> : null;
+};

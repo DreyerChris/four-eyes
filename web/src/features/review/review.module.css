@@ -1,0 +1,377 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2ch;
+  margin-bottom: var(--space-2);
+}
+
+.muted {
+  color: var(--fg-muted);
+}
+
+.tag {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0 0.5ch;
+  margin-left: 1ch;
+  color: var(--fg-muted);
+  font-weight: 400;
+}
+
+.error {
+  color: var(--danger);
+}
+
+.prose {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.markdown {
+  overflow-wrap: anywhere;
+}
+
+.chunkAnchor {
+  scroll-margin-top: var(--space-2);
+}
+
+.chunkTitle {
+  color: var(--fg);
+  margin-bottom: var(--space-1);
+}
+
+.statusRow {
+  display: flex;
+  gap: 2ch;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.status {
+  font-weight: 700;
+}
+
+.status_unseen {
+  color: var(--fg-muted);
+}
+
+.status_good {
+  color: var(--ok);
+}
+
+.status_flagged {
+  color: var(--danger);
+}
+
+.status_question {
+  color: var(--warn);
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1ch;
+  align-items: center;
+}
+
+.buttons + * {
+  margin-top: var(--space-2);
+}
+
+.buttons button[aria-pressed="true"],
+.toolbar button[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+
+.note {
+  margin: var(--space-2) 0;
+  padding: var(--space-1) 1ch;
+  border-left: 2px solid var(--accent);
+  background: var(--bg-raised);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.noteEditor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: var(--space-2) 0;
+}
+
+.noteEditor textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1ch;
+  margin: var(--space-3) 0 var(--space-2);
+}
+
+.stepNav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-3);
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 2ch;
+  min-width: 0;
+}
+
+.progressText {
+  white-space: nowrap;
+}
+
+.segments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.segment {
+  min-width: 2.5ch;
+  min-height: 1.4rem;
+  padding: 0;
+  text-align: center;
+  font-weight: 700;
+}
+
+.segment[aria-current="step"] {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.segment.status_good {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.segment.status_flagged {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.segment.status_question {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.roundMark {
+  color: var(--info);
+  padding: 0 0.5ch;
+  align-self: center;
+}
+
+.finding {
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  padding: var(--space-2) 1ch;
+  background: var(--bg-raised);
+}
+
+.finding:focus-visible {
+  outline-offset: 2px;
+}
+
+.selected {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+
+.severity_bug {
+  border-left-color: var(--severity-bug);
+  color: var(--severity-bug);
+}
+
+.severity_risk {
+  border-left-color: var(--severity-risk);
+  color: var(--severity-risk);
+}
+
+.severity_improvement {
+  border-left-color: var(--severity-improvement);
+  color: var(--severity-improvement);
+}
+
+.severity_nit {
+  border-left-color: var(--severity-nit);
+  color: var(--severity-nit);
+}
+
+.finding.severity_bug,
+.finding.severity_risk,
+.finding.severity_improvement,
+.finding.severity_nit {
+  color: var(--fg);
+}
+
+.findingTitle {
+  margin-bottom: var(--space-1);
+}
+
+.finding.severity_bug .severity {
+  color: var(--severity-bug);
+}
+
+.finding.severity_risk .severity {
+  color: var(--severity-risk);
+}
+
+.finding.severity_improvement .severity {
+  color: var(--severity-improvement);
+}
+
+.finding.severity_nit .severity {
+  color: var(--severity-nit);
+}
+
+.fix {
+  border-left: 2px solid var(--ok);
+  padding-left: 1ch;
+  margin-bottom: var(--space-2);
+}
+
+.fixLabel {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.findingGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.findingActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2ch;
+  align-items: center;
+}
+
+.suggestion {
+  font-weight: 700;
+}
+
+.suggestion_approve {
+  color: var(--ok);
+}
+
+.suggestion_approve_with_nits {
+  color: var(--info);
+}
+
+.suggestion_request_changes {
+  color: var(--danger);
+}
+
+.plainList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.noteItem {
+  padding: var(--space-1) 0;
+}
+
+.question {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-1);
+}
+
+.subheading {
+  margin: var(--space-2) 0 var(--space-1);
+}
+
+.answerRow {
+  display: flex;
+  gap: 1ch;
+  align-items: baseline;
+}
+
+.costTable {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.costTable th,
+.costTable td {
+  text-align: left;
+  padding: 0 2ch var(--space-1) 0;
+}
+
+.costTable tfoot th,
+.costTable tfoot td {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-1);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.chunkQuestions {
+  margin: var(--space-2) 0;
+  padding: var(--space-1) 1ch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.chunkQuestions > summary {
+  cursor: pointer;
+  margin-bottom: var(--space-1);
+}
+
+.finding.resolved {
+  background: transparent;
+  border-style: dashed;
+  border-left-color: var(--border);
+  color: var(--fg-muted);
+}
+
+.finding.resolved .severity,
+.finding.resolved .fixLabel {
+  color: var(--fg-muted);
+}
+
+.finding.resolved .fix {
+  border-left-color: var(--border);
+}
+
+.resolvedNote {
+  color: var(--fg-muted);
+}

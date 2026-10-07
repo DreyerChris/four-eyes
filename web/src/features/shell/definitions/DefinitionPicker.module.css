@@ -1,0 +1,35 @@
+.symbol {
+  font-family: inherit;
+  color: var(--accent);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.match {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-1) var(--space-2);
+}
+
+.location {
+  color: var(--accent);
+}
+
+.preview {
+  font-family: inherit;
+  color: var(--fg-muted);
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}

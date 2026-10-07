@@ -1,0 +1,8 @@
+import { UserService } from "../src/services/user-service";
+
+test("creates a user with a lower-cased email", async () => {
+  const sent: string[] = [];
+  const service = new UserService({ save: async () => {}, all: () => [] }, { sendWelcome: async (email) => void sent.push(email) });
+  expect((await service.createUser("Ada")).email).toBe("ada@example.com");
+  expect(sent).toEqual(["ada@example.com"]);
+});

@@ -1,0 +1,12 @@
+lockfileVersion: '9.0'
+
+importers:
+  .:
+    dependencies:
+      mailer:
+        specifier: ^1.0.0
+        version: 1.0.0
+
+packages:
+  mailer@1.0.0:
+    resolution: {integrity: sha512-AAAA}

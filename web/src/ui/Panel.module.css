@@ -1,0 +1,52 @@
+.panel {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  margin-top: 0.8em;
+  min-width: 0;
+}
+
+.panel:focus-within {
+  border-color: var(--border-strong);
+}
+
+.title {
+  position: absolute;
+  top: 0;
+  left: 1ch;
+  transform: translateY(-55%);
+  display: flex;
+  gap: 1ch;
+  align-items: center;
+  padding: 0 1ch;
+  background: var(--bg);
+  color: var(--accent);
+  font-weight: 700;
+  max-width: calc(100% - 2ch);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actions {
+  position: absolute;
+  top: 0;
+  right: 1ch;
+  transform: translateY(-55%);
+  display: flex;
+  gap: 1ch;
+  padding: 0 1ch;
+  background: var(--bg);
+}
+
+.actions button {
+  min-height: 1.4rem;
+}
+
+.fill {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}

@@ -1,0 +1,7 @@
+export interface User {
+  readonly id: string;
+  readonly name: string;
+  readonly createdAt: Date;
+}
+
+export type UserId = User["id"];

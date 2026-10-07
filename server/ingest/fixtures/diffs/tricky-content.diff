@@ -1,0 +1,11 @@
+diff --git a/src/dashes.txt b/src/dashes.txt
+index 1a3736e..898a1fd 100644
+--- a/src/dashes.txt
++++ b/src/dashes.txt
+@@ -1,4 +1,5 @@
+ keep
+--- a/not-a-header
+ ++ b/also-not
+++++ b/still-not
+ end
++@@ -1 +1 @@ not a header

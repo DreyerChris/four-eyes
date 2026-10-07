@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.four-eyes-dev/
+test-results/
+playwright-report/
+*.db
+.claude/

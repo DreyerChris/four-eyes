@@ -1,0 +1,23 @@
+diff --git a/src/app.ts b/src/app.ts
+index 6b57575..519edee 100644
+--- a/src/app.ts
++++ b/src/app.ts
+@@ -2,7 +2,7 @@ export const value1 = 1;
+ export const value2 = 2;
+ export const value3 = 3;
+ export const value4 = 4;
+-export const value5 = 5;
++export const value5 = 500;
+ export const value6 = 6;
+ export const value7 = 7;
+ export const value8 = 8;
+@@ -27,7 +27,8 @@ export const value26 = 26;
+ export const value27 = 27;
+ export const value28 = 28;
+ export const value29 = 29;
+-export const value30 = 30;
++export const value30 = 3000;
++export const extra = true;
+ export const value31 = 31;
+ export const value32 = 32;
+ export const value33 = 33;

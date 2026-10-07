@@ -1,0 +1,391 @@
+diff --git a/src/big.ts b/src/big.ts
+index 9d904a0..a8e7bf5 100644
+--- a/src/big.ts
++++ b/src/big.ts
+@@ -1,200 +1,200 @@
+ line 1
+ line 2
+ line 3
+-line 4
++changed line 4
+ line 5
+ line 6
+ line 7
+-line 8
++changed line 8
+ line 9
+ line 10
+ line 11
+-line 12
++changed line 12
+ line 13
+ line 14
+ line 15
+-line 16
++changed line 16
+ line 17
+ line 18
+ line 19
+-line 20
++changed line 20
+ line 21
+ line 22
+ line 23
+-line 24
++changed line 24
+ line 25
+ line 26
+ line 27
+-line 28
++changed line 28
+ line 29
+ line 30
+ line 31
+-line 32
++changed line 32
+ line 33
+ line 34
+ line 35
+-line 36
++changed line 36
+ line 37
+ line 38
+ line 39
+-line 40
++changed line 40
+ line 41
+ line 42
+ line 43
+-line 44
++changed line 44
+ line 45
+ line 46
+ line 47
+-line 48
++changed line 48
+ line 49
+ line 50
+ line 51
+-line 52
++changed line 52
+ line 53
+ line 54
+ line 55
+-line 56
++changed line 56
+ line 57
+ line 58
+ line 59
+-line 60
++changed line 60
+ line 61
+ line 62
+ line 63
+-line 64
++changed line 64
+ line 65
+ line 66
+ line 67
+-line 68
++changed line 68
+ line 69
+ line 70
+ line 71
+-line 72
++changed line 72
+ line 73
+ line 74
+ line 75
+-line 76
++changed line 76
+ line 77
+ line 78
+ line 79
+-line 80
++changed line 80
+ line 81
+ line 82
+ line 83
+-line 84
++changed line 84
+ line 85
+ line 86
+ line 87
+-line 88
++changed line 88
+ line 89
+ line 90
+ line 91
+-line 92
++changed line 92
+ line 93
+ line 94
+ line 95
+-line 96
++changed line 96
+ line 97
+ line 98
+ line 99
+-line 100
++changed line 100
+ line 101
+ line 102
+ line 103
+-line 104
++changed line 104
+ line 105
+ line 106
+ line 107
+-line 108
++changed line 108
+ line 109
+ line 110
+ line 111
+-line 112
++changed line 112
+ line 113
+ line 114
+ line 115
+-line 116
++changed line 116
+ line 117
+ line 118
+ line 119
+-line 120
++changed line 120
+ line 121
+ line 122
+ line 123
+-line 124
++changed line 124
+ line 125
+ line 126
+ line 127
+-line 128
++changed line 128
+ line 129
+ line 130
+ line 131
+-line 132
++changed line 132
+ line 133
+ line 134
+ line 135
+-line 136
++changed line 136
+ line 137
+ line 138
+ line 139
+-line 140
++changed line 140
+ line 141
+ line 142
+ line 143
+-line 144
++changed line 144
+ line 145
+ line 146
+ line 147
+-line 148
++changed line 148
+ line 149
+ line 150
+ line 151
+-line 152
++changed line 152
+ line 153
+ line 154
+ line 155
+-line 156
++changed line 156
+ line 157
+ line 158
+ line 159
+-line 160
++changed line 160
+ line 161
+ line 162
+ line 163
+-line 164
++changed line 164
+ line 165
+ line 166
+ line 167
+-line 168
++changed line 168
+ line 169
+ line 170
+ line 171
+-line 172
++changed line 172
+ line 173
+ line 174
+ line 175
+-line 176
++changed line 176
+ line 177
+ line 178
+ line 179
+-line 180
++changed line 180
+ line 181
+ line 182
+ line 183
+-line 184
++changed line 184
+ line 185
+ line 186
+ line 187
+-line 188
++changed line 188
+ line 189
+ line 190
+ line 191
+-line 192
++changed line 192
+ line 193
+ line 194
+ line 195
+-line 196
++changed line 196
+ line 197
+ line 198
+ line 199
+-line 200
++changed line 200
+diff --git a/src/generated.ts b/src/generated.ts
+new file mode 100644
+index 0000000..4f24ac3
+--- /dev/null
++++ b/src/generated.ts
+@@ -0,0 +1,130 @@
++export const g1 = 1;
++export const g2 = 2;
++export const g3 = 3;
++export const g4 = 4;
++export const g5 = 5;
++export const g6 = 6;
++export const g7 = 7;
++export const g8 = 8;
++export const g9 = 9;
++export const g10 = 10;
++export const g11 = 11;
++export const g12 = 12;
++export const g13 = 13;
++export const g14 = 14;
++export const g15 = 15;
++export const g16 = 16;
++export const g17 = 17;
++export const g18 = 18;
++export const g19 = 19;
++export const g20 = 20;
++export const g21 = 21;
++export const g22 = 22;
++export const g23 = 23;
++export const g24 = 24;
++export const g25 = 25;
++export const g26 = 26;
++export const g27 = 27;
++export const g28 = 28;
++export const g29 = 29;
++export const g30 = 30;
++export const g31 = 31;
++export const g32 = 32;
++export const g33 = 33;
++export const g34 = 34;
++export const g35 = 35;
++export const g36 = 36;
++export const g37 = 37;
++export const g38 = 38;
++export const g39 = 39;
++export const g40 = 40;
++export const g41 = 41;
++export const g42 = 42;
++export const g43 = 43;
++export const g44 = 44;
++export const g45 = 45;
++export const g46 = 46;
++export const g47 = 47;
++export const g48 = 48;
++export const g49 = 49;
++export const g50 = 50;
++export const g51 = 51;
++export const g52 = 52;
++export const g53 = 53;
++export const g54 = 54;
++export const g55 = 55;
++export const g56 = 56;
++export const g57 = 57;
++export const g58 = 58;
++export const g59 = 59;
++export const g60 = 60;
++export const g61 = 61;
++export const g62 = 62;
++export const g63 = 63;
++export const g64 = 64;
++export const g65 = 65;
++export const g66 = 66;
++export const g67 = 67;
++export const g68 = 68;
++export const g69 = 69;
++export const g70 = 70;
++export const g71 = 71;
++export const g72 = 72;
++export const g73 = 73;
++export const g74 = 74;
++export const g75 = 75;
++export const g76 = 76;
++export const g77 = 77;
++export const g78 = 78;
++export const g79 = 79;
++export const g80 = 80;
++export const g81 = 81;
++export const g82 = 82;
++export const g83 = 83;
++export const g84 = 84;
++export const g85 = 85;
++export const g86 = 86;
++export const g87 = 87;
++export const g88 = 88;
++export const g89 = 89;
++export const g90 = 90;
++export const g91 = 91;
++export const g92 = 92;
++export const g93 = 93;
++export const g94 = 94;
++export const g95 = 95;
++export const g96 = 96;
++export const g97 = 97;
++export const g98 = 98;
++export const g99 = 99;
++export const g100 = 100;
++export const g101 = 101;
++export const g102 = 102;
++export const g103 = 103;
++export const g104 = 104;
++export const g105 = 105;
++export const g106 = 106;
++export const g107 = 107;
++export const g108 = 108;
++export const g109 = 109;
++export const g110 = 110;
++export const g111 = 111;
++export const g112 = 112;
++export const g113 = 113;
++export const g114 = 114;
++export const g115 = 115;
++export const g116 = 116;
++export const g117 = 117;
++export const g118 = 118;
++export const g119 = 119;
++export const g120 = 120;
++export const g121 = 121;
++export const g122 = 122;
++export const g123 = 123;
++export const g124 = 124;
++export const g125 = 125;
++export const g126 = 126;
++export const g127 = 127;
++export const g128 = 128;
++export const g129 = 129;
++export const g130 = 130;

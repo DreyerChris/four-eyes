@@ -1,0 +1,184 @@
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  --font-size: 13px;
+  --line-height: 1.5;
+
+  --bg: #0e1116;
+  --bg-raised: #161b22;
+  --bg-inset: #0a0d12;
+  --bg-hover: #1f2630;
+  --bg-selected: #253041;
+  --fg: #e6edf3;
+  --fg-muted: #9da7b3;
+  --border: #5c6673;
+  --border-strong: #8b949e;
+  --accent: #79c0ff;
+  --accent-fg: #0e1116;
+  --focus: #ffd866;
+
+  --ok: #7ee787;
+  --warn: #e3b341;
+  --danger: #ff7b72;
+  --info: #79c0ff;
+
+  --diff-add-fg: #7ee787;
+  --diff-add-bg: #12301d;
+  --diff-add-word-bg: #1f5a32;
+  --diff-del-fg: #ffa198;
+  --diff-del-bg: #3b1618;
+  --diff-del-word-bg: #6b2328;
+  --diff-hunk-fg: #a5b4fc;
+  --diff-hunk-bg: #161b2e;
+  --diff-gutter-fg: #8b949e;
+
+  --severity-bug: var(--danger);
+  --severity-risk: var(--warn);
+  --severity-improvement: var(--info);
+  --severity-nit: var(--fg-muted);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --radius: 2px;
+  --status-bar-height: 1.75rem;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --bg-raised: #f6f8fa;
+  --bg-inset: #eef1f4;
+  --bg-hover: #eaeef2;
+  --bg-selected: #ddf4ff;
+  --fg: #1f2328;
+  --fg-muted: #57606a;
+  --border: #8c959f;
+  --border-strong: #57606a;
+  --accent: #0550ae;
+  --accent-fg: #ffffff;
+  --focus: #9a6700;
+  --ok: #116329;
+  --warn: #7d4e00;
+  --danger: #a40e26;
+  --info: #0550ae;
+  --diff-add-fg: #116329;
+  --diff-add-bg: #dafbe1;
+  --diff-add-word-bg: #aceebb;
+  --diff-del-fg: #a40e26;
+  --diff-del-bg: #ffebe9;
+  --diff-del-word-bg: #ffcecb;
+  --diff-hunk-fg: #3730a3;
+  --diff-hunk-bg: #eef2ff;
+  --diff-gutter-fg: #57606a;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-size: inherit;
+  font-weight: 700;
+  margin: 0;
+}
+
+p {
+  margin: 0 0 var(--space-2);
+}
+
+a {
+  color: var(--accent);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0 var(--space-2);
+  cursor: pointer;
+  min-height: 1.75rem;
+}
+
+button:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  color: var(--fg-muted);
+}
+
+input,
+textarea,
+select {
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-1) var(--space-2);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--bg-selected);
+}
+
+kbd {
+  font-family: inherit;
+  color: var(--accent);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
