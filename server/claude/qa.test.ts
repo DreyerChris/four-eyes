@@ -5,7 +5,7 @@ import { HttpError } from "../lib/errors";
 import { createTestContext, type TestContextHandle } from "../test/context";
 import { runChunking } from "./chunking";
 import { ClaudeRunError } from "./errors";
-import { askQuestion } from "./qa";
+import { askQuestion, GROUNDING_RULES } from "./qa";
 import { OUTPUT_LENGTH_RULES } from "./verbosity";
 import { createScriptedRunner, seedReviewWithHunks } from "./test-support";
 
@@ -85,6 +85,23 @@ describe("askQuestion", () => {
     expect(runner.streamingRequests[0]?.prompt).toContain(OUTPUT_LENGTH_RULES.standard.answer);
     expect(runner.streamingRequests[1]?.resumeSessionId).toBe("session-1");
     expect(runner.streamingRequests[1]?.prompt).toContain(OUTPUT_LENGTH_RULES.brief.answer);
+  });
+
+  it("tells Claude to check the repository on every question, including resumed ones", async () => {
+    const runner = createScriptedRunner([], (req) => [
+      { type: "done", sessionId: req.resumeSessionId ?? "session-1", resultText: "Answer", usage: { inputTokens: 1, outputTokens: 1, costUsd: 0 } },
+    ]);
+    handle = createTestContext({ claude: runner });
+    const { ctx } = handle;
+    const { review } = seedReviewWithHunks(ctx, ["src/a.ts"]);
+
+    await collect(askQuestion(ctx, review.id, request(), new AbortController().signal));
+    await collect(askQuestion(ctx, review.id, request({ question: "And this?" }), new AbortController().signal));
+
+    expect(runner.streamingRequests[1]?.resumeSessionId).toBe("session-1");
+    for (const sent of runner.streamingRequests) {
+      expect(sent.prompt).toContain(GROUNDING_RULES.join("\n"));
+    }
   });
 
   it("starts a new session when resuming fails before any text arrives", async () => {

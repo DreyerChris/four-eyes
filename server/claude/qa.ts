@@ -40,6 +40,13 @@ const lineRange = (request: AskQuestionRequest): string => {
     : `, lines ${request.startLine}-${request.endLine}`;
 };
 
+export const GROUNDING_RULES: readonly string[] = [
+  "Ground your answer in the repository. Unless the question is only about code structure or how a language feature works, look up the relevant code before answering:",
+  "read the files involved, grep for callers, definitions and tests, and use git log / git blame when history matters.",
+  "Any diff shown here may be cut off and does not show the surrounding code, so do not describe code you have not read. Cite path:line for claims about the codebase.",
+  "If you could not find or confirm something, say so plainly instead of guessing. Keeping the answer short does not mean skipping the lookup.",
+];
+
 const prPreamble = (review: Review): readonly string[] => [
   "You are answering a reviewer's questions about a pull request. The PR's code is checked out at the head commit in your working directory.",
   "You can use Read, Grep, Glob and git log / git blame / git show to look things up. You cannot edit files.",
@@ -70,6 +77,8 @@ export const buildQaPrompt = (qa: QaContext, newSession: boolean): string => {
     ...chunkContext,
     ...location,
     ...selection,
+    "",
+    ...GROUNDING_RULES,
     "",
     OUTPUT_LENGTH_RULES[verbosity].answer,
     "",
